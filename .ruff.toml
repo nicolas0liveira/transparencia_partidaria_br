@@ -1,0 +1,54 @@
+# O Ruff é um linter extremamente rápido escrito em Rust.
+# Ele verifica problemas como:
+# - imports não usados (F401)
+# - variáveis não usadas
+# - estilo de código
+# - possíveis bugs
+# - organização de imports
+# - modernização de sintaxe
+#
+# Pode corrigir automaticamente, desde que não impacte na lógica
+# Ele substitui ferramentas antigas como:
+# - flake8
+# - isort
+# - pyupgrade
+# - parte do pylint
+# - black (formatter opcional)
+#
+# Precedência das configurações do Ruff:
+#       - inline no código (maior prioridade)
+#       - ruff.toml / .ruff.toml mais próximo
+#       - pyproject.toml ([tool.ruff])
+#       - defaults do Ruff
+#
+# Tipos de erros
+#   E — erros de estilo (pycodestyle)
+#       - espaços incorretos
+#       - indentação errada
+#       - linhas muito longas
+#       - imports fora do topo
+#
+#   F — bugs simples (pyflakes)
+#       - imports não usados
+#       - variáveis não usadas
+#       - variáveis não definidas
+#
+#   I — organização de imports (isort)
+#        - ordenar imports
+#        - separar stdlib / terceiros / projeto
+#
+#   UP — modernização do Python (pyupgrade)
+#
+#   B — possíveis bugs (bugbear)
+#         - Detecta padrões perigosos.
+##################################################################
+
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "UP", "B"]
+ignore = ["E402", "I001"]
+
+#[lint.per-file-ignores]
+#"dags/*.py" = ["E402"]

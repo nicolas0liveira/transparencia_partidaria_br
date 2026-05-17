@@ -1,0 +1,48 @@
+/**
+*   Pylance é o language server do Python no VSCode.
+*   Ele fornece autocomplete, análise estática, type checking e navegação de código.
+*   Este arquivo configura como o Pylance/Pyright analisa o projeto.
+*
+*   Precedêcia:
+*       Código (# pyright / # type: ignore)
+*       pyrightconfig.json
+*       VSCode settings (devcontainer)
+*       Defaults do Pylance
+*
+*  Boas prácias de configuração:
+*
+*       [Tipo de config]     |     [Onde colocar]
+*       type checking      |     pyrightconfig.json
+*       lint               |     ruff.toml
+*       editor             |     devcontainer.json
+*/
+{
+    "typeCheckingMode": "basic",
+    "useLibraryCodeForTypes": true,
+
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false,
+    "reportOptionalMemberAccess": false,
+
+    "exclude": [
+        "**/__pycache__",
+        "**/.ruff_cache",
+        "**/.pytest_cache",
+        "**/.mypy_cache",
+        "**/.venv",
+        "**/venv",
+        "**/env",
+        "**/.env",
+        "**/build",
+        "**/dist",
+        "**/node_modules",
+        "**/.*"
+    ],
+
+    "extraPaths": [
+        "/opt/airflow",
+        "/opt/airflow/dags",
+        "/opt/airflow/plugins"
+    ]
+
+}
