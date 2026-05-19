@@ -147,8 +147,6 @@ def preprocess_receita(
         "Preprocessamento receita concluído."
     )
 
-    return df_receita
-
     # -------------------------------------------------------------------------
     # Exercício
     # -------------------------------------------------------------------------
@@ -159,3 +157,5 @@ def preprocess_receita(
             df_receita["dt_receita"]
             .dt.year
         )
+
+    return df_receita
