@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from transparencia_partidaria_br.utils.pipeline.logger import (
+from transparencia_partidaria_br.utils.pipeline.logging import (
     info,
 )
 

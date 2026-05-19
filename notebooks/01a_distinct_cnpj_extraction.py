@@ -8,7 +8,7 @@ from IPython.display import display
 
 import pandas as pd
 
-from transparencia_partidaria_br.utils.pipeline.logger import (
+from transparencia_partidaria_br.utils.pipeline.logging import (
     elapsed,
     info,
     log_dataframe,
