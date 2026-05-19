@@ -21,63 +21,10 @@ from transparencia_partidaria_br.utils.tse.tse_parser import (
 # =============================================================================
 
 RENAME_DESPESA = {
-    # Partido
-    "SG_PARTIDO": "sg_partido",
-    "NM_PARTIDO": "nm_partido",
-
-    # Prestador
-    "NR_CNPJ_PRESTADOR_CONTA":
-        "nr_cnpj_prestador_conta",
-
-    # Fornecedor
-    "NR_CPF_CNPJ_FORNECEDOR":
-        "nr_cpf_cnpj_fornecedor",
-
-    "NM_FORNECEDOR": "nm_fornecedor",
-
-    # Despesa
-    "TP_DESPESA": "tp_despesa",
-    "DT_PAGAMENTO": "dt_pagamento",
-    "DS_GASTO": "ds_gasto",
-
-    "VR_GASTO": "vl_gasto",
-    "VR_PAGAMENTO": "vl_pagamento",
-    "VR_DOCUMENTO": "vl_documento",
-
-    # Documento
-    "CD_TP_DOCUMENTO":
-        "cd_tp_documento",
-
-    "DS_TP_DOCUMENTO":
-        "ds_tp_documento",
-
-    "NR_DOCUMENTO":
-        "nr_documento",
-
-    # Fornecedor tipo
-    "CD_TP_FORNECEDOR":
-        "cd_tp_fornecedor",
-
-    "DS_TP_FORNECEDOR":
-        "ds_tp_fornecedor",
-
-    # Fonte despesa
-    "CD_FONTE_DESPESA":
-        "cd_fonte_despesa",
-
-    "DS_FONTE_DESPESA":
-        "ds_fonte_despesa",
-
-    # Geografia
-    "SG_UF": "sg_uf",
-    "CD_MUNICIPIO": "cd_municipio",
-    "NM_MUNICIPIO": "nm_municipio",
-
-    # Exercício
-    "AA_EXERCICIO": "aa_exercicio",
-
-    # Chave
-    "SQ_DESPESA": "sq_despesa",
+    # Valores monetários
+    "vr_gasto": "vl_gasto",
+    "vr_pagamento": "vl_pagamento",
+    "vr_documento": "vl_documento",
 }
 
 # =============================================================================
@@ -138,6 +85,7 @@ def preprocess_despesa(
     df_despesa = apply_date_parser(
         df_despesa,
         columns=[
+            "dt_geracao",
             "dt_pagamento",
         ],
     )
@@ -159,24 +107,31 @@ def preprocess_despesa(
     # Exercício
     # -------------------------------------------------------------------------
 
-    if "aa_exercicio" in df_despesa.columns:
+    numeric_columns = [
+        "aa_exercicio",
+        "nr_zona",
+        "aa_aidf",
+        "sq_despesa",
+    ]
 
-        df_despesa[
-            "aa_exercicio"
-        ] = pd.to_numeric(
-            df_despesa[
-                "aa_exercicio"
-            ],
-            errors="coerce",
-        )
+    for col in numeric_columns:
+
+        if col in df_despesa.columns:
+
+            df_despesa[col] = (
+                pd.to_numeric(
+                    df_despesa[col],
+                    errors="coerce",
+                )
+            )
 
     # -------------------------------------------------------------------------
     # CNPJ/CPF como string
     # -------------------------------------------------------------------------
 
     cnpj_columns = [
-        "nr_cnpj_prestador_conta",
-        "nr_cpf_cnpj_fornecedor",
+        "cd_cnpj_prestador_conta",
+        "cd_cpf_cnpj_fornecedor",
     ]
 
     for col in cnpj_columns:

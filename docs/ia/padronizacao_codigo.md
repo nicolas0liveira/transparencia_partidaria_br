@@ -76,6 +76,15 @@ NM_PARTIDO -> nm_partido
 | número             | `nr_*`  |
 | data               | `dt_*`  |
 
+Observar:
+
+```text
+nr_* = quantitativo numérico
+cd_* = identificador/código
+
+logo cpnj deve ser tratado como cd_cnpj, por exemplo
+```
+
 ---
 
 ## Persistência

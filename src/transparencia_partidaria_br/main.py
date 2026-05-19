@@ -46,7 +46,7 @@ def main() -> None:
             "INGESTION"
         )
 
-        run_ingestion()
+        # run_ingestion()
 
         success(
             "Ingestion finalizada."

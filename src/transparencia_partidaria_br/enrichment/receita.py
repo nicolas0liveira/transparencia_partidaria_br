@@ -9,6 +9,18 @@ from transparencia_partidaria_br.utils.pipeline.logging import (
 )
 
 # =============================================================================
+# Constantes
+# =============================================================================
+
+RECEITA_PUBLICA = "PUBLICA"
+
+RECEITA_PRIVADA = "PRIVADA"
+
+RECEITA_PARTIDARIA = "PARTIDARIA"
+
+RECEITA_OUTROS = "OUTROS"
+
+# =============================================================================
 # Classificação de Receita
 # =============================================================================
 
@@ -35,7 +47,9 @@ def classify_revenue_source(
         .str.upper()
     )
 
-    df["tp_receita"] = "OUTROS"
+    df["tp_receita"] = (
+        RECEITA_OUTROS
+    )
 
     # -------------------------------------------------------------------------
     # Receita pública
@@ -47,12 +61,13 @@ def classify_revenue_source(
             "FUNDO ESPECIAL"
         ),
         regex=True,
+        na=False,
     )
 
     df.loc[
         mask_publica,
         "tp_receita",
-    ] = "PUBLICA"
+    ] = RECEITA_PUBLICA
 
     # -------------------------------------------------------------------------
     # Receita privada
@@ -64,12 +79,13 @@ def classify_revenue_source(
             "PESSOAS JURIDICAS"
         ),
         regex=True,
+        na=False,
     )
 
     df.loc[
         mask_privada,
         "tp_receita",
-    ] = "PRIVADA"
+    ] = RECEITA_PRIVADA
 
     # -------------------------------------------------------------------------
     # Receita partidária
@@ -78,12 +94,13 @@ def classify_revenue_source(
     mask_partidaria = origem.str.contains(
         "PARTIDOS POLITICOS",
         regex=True,
+        na=False,
     )
 
     df.loc[
         mask_partidaria,
         "tp_receita",
-    ] = "PARTIDARIA"
+    ] = RECEITA_PARTIDARIA
 
     return df
 
@@ -100,7 +117,7 @@ def create_revenue_features(
     Cria métricas derivadas de receita.
     """
 
-    if "vr_receita" not in df.columns:
+    if "vl_receita" not in df.columns:
         return df
 
     # -------------------------------------------------------------------------
@@ -108,15 +125,18 @@ def create_revenue_features(
     # -------------------------------------------------------------------------
 
     df["in_receita_publica"] = (
-        df["tp_receita"] == "PUBLICA"
+        df["tp_receita"]
+        == RECEITA_PUBLICA
     )
 
     df["in_receita_privada"] = (
-        df["tp_receita"] == "PRIVADA"
+        df["tp_receita"]
+        == RECEITA_PRIVADA
     )
 
     df["in_receita_partidaria"] = (
-        df["tp_receita"] == "PARTIDARIA"
+        df["tp_receita"]
+        == RECEITA_PARTIDARIA
     )
 
     # -------------------------------------------------------------------------
@@ -124,7 +144,7 @@ def create_revenue_features(
     # -------------------------------------------------------------------------
 
     df["vl_receita_publica"] = (
-        df["vr_receita"]
+        df["vl_receita"]
         .where(
             df["in_receita_publica"],
             0,
@@ -132,7 +152,7 @@ def create_revenue_features(
     )
 
     df["vl_receita_privada"] = (
-        df["vr_receita"]
+        df["vl_receita"]
         .where(
             df["in_receita_privada"],
             0,
@@ -140,7 +160,7 @@ def create_revenue_features(
     )
 
     df["vl_receita_partidaria"] = (
-        df["vr_receita"]
+        df["vl_receita"]
         .where(
             df["in_receita_partidaria"],
             0,
@@ -169,11 +189,11 @@ def aggregate_revenue_party_year(
     ]
 
     metricas = {
-        "vr_receita": "sum",
+        "vl_receita": "sum",
         "vl_receita_publica": "sum",
         "vl_receita_privada": "sum",
         "vl_receita_partidaria": "sum",
-        "nr_cpf_cnpj_doador": "nunique",
+        "cd_cpf_cnpj_doador": "nunique",
     }
 
     df_agg = (
@@ -191,9 +211,24 @@ def aggregate_revenue_party_year(
 
     df_agg = df_agg.rename(
         columns={
-            "vr_receita": "vl_receita_total",
-            "nr_cpf_cnpj_doador": "qtd_doadores",
+            "vl_receita":
+                "vl_receita_total",
+
+            "cd_cpf_cnpj_doador":
+                "qtd_doadores_unicos",
         }
+    )
+
+    # -------------------------------------------------------------------------
+    # Totais seguros
+    # -------------------------------------------------------------------------
+
+    total_receita = (
+        df_agg["vl_receita_total"]
+        .replace(
+            0,
+            pd.NA,
+        )
     )
 
     # -------------------------------------------------------------------------
@@ -202,12 +237,12 @@ def aggregate_revenue_party_year(
 
     df_agg["pct_receita_publica"] = (
         df_agg["vl_receita_publica"]
-        / df_agg["vl_receita_total"]
+        / total_receita
     ) * 100
 
     df_agg["pct_receita_privada"] = (
         df_agg["vl_receita_privada"]
-        / df_agg["vl_receita_total"]
+        / total_receita
     ) * 100
 
     # -------------------------------------------------------------------------
@@ -216,7 +251,12 @@ def aggregate_revenue_party_year(
 
     df_agg["ticket_medio_receita"] = (
         df_agg["vl_receita_total"]
-        / df_agg["qtd_doadores"]
+        / df_agg[
+            "qtd_doadores_unicos"
+        ].replace(
+            0,
+            pd.NA,
+        )
     )
 
     return df_agg
@@ -243,8 +283,8 @@ def enrich_revenue_data(
     # -------------------------------------------------------------------------
 
     required_columns = [
-        "nr_cpf_cnpj_doador",
-        "vr_receita",
+        "cd_cpf_cnpj_doador",
+        "vl_receita",
         "sg_partido",
     ]
 
@@ -270,7 +310,16 @@ def enrich_revenue_data(
     df = enrich_cnpj_data(
         df_base=df,
         df_cnpj=df_cnpj,
-        cnpj_column="nr_cpf_cnpj_doador",
+        cnpj_column="cd_cpf_cnpj_doador",
+    )
+
+    # -------------------------------------------------------------------------
+    # Cobertura enrichment
+    # -------------------------------------------------------------------------
+
+    cobertura_cnpj = (
+        df["is_cnpj_enriquecido"]
+        .mean()
     )
 
     # -------------------------------------------------------------------------
@@ -304,6 +353,10 @@ def enrich_revenue_data(
             "CLASSIFICACAO_RECEITA",
             "FEATURE_ENGINEERING_RECEITA",
             "ENRICHMENT_CNPJ_DOADOR",
+            (
+                f"CNPJ_COVERAGE="
+                f"{cobertura_cnpj:.2%}"
+            ),
         ],
     )
 

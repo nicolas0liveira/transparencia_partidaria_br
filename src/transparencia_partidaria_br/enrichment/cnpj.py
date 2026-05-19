@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from transparencia_partidaria_br.utils.pipeline.logging import (
@@ -5,29 +6,34 @@ from transparencia_partidaria_br.utils.pipeline.logging import (
 )
 
 # =============================================================================
-# Normalização
+# Constantes
 # =============================================================================
 
+FORNECEDOR_PUBLICO = "PUBLICO"
 
-def normalize_cnpj(
-    serie: pd.Series,
-) -> pd.Series:
-    """
-    Normaliza CNPJ:
-    - remove caracteres especiais
-    - mantém apenas números
-    - preenche zeros à esquerda
-    """
+FORNECEDOR_PRIVADO = "PRIVADO"
 
-    return (
-        serie.astype(str)
-        .str.replace(
-            r"\D",
-            "",
-            regex=True,
-        )
-        .str.zfill(14)
-    )
+FORNECEDOR_TERCEIRO_SETOR = (
+    "TERCEIRO_SETOR"
+)
+
+FORNECEDOR_PARTIDARIO = (
+    "PARTIDARIO"
+)
+
+FORNECEDOR_OUTROS = "OUTROS"
+
+PORTE_MICRO = "MICRO"
+
+PORTE_PEQUENA = "PEQUENA"
+
+PORTE_MEDIA = "MEDIA"
+
+PORTE_GRANDE = "GRANDE"
+
+PORTE_NAO_IDENTIFICADO = (
+    "NAO_IDENTIFICADO"
+)
 
 
 # =============================================================================
@@ -39,7 +45,7 @@ def derive_company_size(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Deriva porte simplificado da empresa.
+    Deriva porte simplificado empresa.
     """
 
     if "ds_porte_empresa" not in df.columns:
@@ -51,41 +57,46 @@ def derive_company_size(
         .str.upper()
     )
 
+    conditions = [
+        porte.str.contains(
+            r"MICRO|MEI|\bME\b",
+            regex=True,
+            na=False,
+        ),
+
+        porte.str.contains(
+            r"PEQUENA|EPP",
+            regex=True,
+            na=False,
+        ),
+
+        porte.str.contains(
+            r"MEDIA",
+            regex=True,
+            na=False,
+        ),
+
+        porte.str.contains(
+            r"GRANDE|S/A|\bSA\b",
+            regex=True,
+            na=False,
+        ),
+    ]
+
+    choices = [
+        PORTE_MICRO,
+        PORTE_PEQUENA,
+        PORTE_MEDIA,
+        PORTE_GRANDE,
+    ]
+
     df["tp_porte_empresa"] = (
-        "NAO_IDENTIFICADO"
+        np.select(
+            conditions,
+            choices,
+            default=PORTE_NAO_IDENTIFICADO,
+        )
     )
-
-    df.loc[
-        porte.str.contains(
-            "MICRO|MEI|ME ",
-            regex=True,
-        ),
-        "tp_porte_empresa",
-    ] = "MICRO"
-
-    df.loc[
-        porte.str.contains(
-            "PEQUENA|EPP",
-            regex=True,
-        ),
-        "tp_porte_empresa",
-    ] = "PEQUENA"
-
-    df.loc[
-        porte.str.contains(
-            "MEDIA",
-            regex=True,
-        ),
-        "tp_porte_empresa",
-    ] = "MEDIA"
-
-    df.loc[
-        porte.str.contains(
-            "GRANDE|S/A|SA",
-            regex=True,
-        ),
-        "tp_porte_empresa",
-    ] = "GRANDE"
 
     return df
 
@@ -94,8 +105,8 @@ def derive_supplier_type(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Classifica tipo do fornecedor
-    com base na natureza jurídica.
+    Classifica tipo institucional
+    com base natureza jurídica.
     """
 
     if (
@@ -110,83 +121,70 @@ def derive_supplier_type(
         .str.upper()
     )
 
-    df["tp_fornecedor"] = "OUTROS"
-
-    # -------------------------------------------------------------------------
-    # Público
-    # -------------------------------------------------------------------------
-
-    mask_publico = natureza.str.contains(
-        (
-            "ADMINISTRACAO PUBLICA|"
-            "MUNICIPIO|"
-            "ESTADO|"
-            "UNIAO|"
-            "AUTARQUIA|"
-            "FUNDACAO PUBLICA|"
-            "ORGAO PUBLICO"
+    conditions = [
+        # Público
+        natureza.str.contains(
+            (
+                "ADMINISTRACAO PUBLICA|"
+                "MUNICIPIO|"
+                "ESTADO|"
+                "UNIAO|"
+                "AUTARQUIA|"
+                "FUNDACAO PUBLICA|"
+                "ORGAO PUBLICO"
+            ),
+            regex=True,
+            na=False,
         ),
-        regex=True,
-    )
 
-    df.loc[
-        mask_publico,
-        "tp_fornecedor",
-    ] = "PUBLICO"
-
-    # -------------------------------------------------------------------------
-    # Terceiro setor
-    # -------------------------------------------------------------------------
-
-    mask_terceiro_setor = natureza.str.contains(
-        (
-            "ASSOCIACAO|"
-            "FUNDACAO PRIVADA|"
-            "ORGANIZACAO RELIGIOSA|"
-            "SINDICATO"
+        # Terceiro setor
+        natureza.str.contains(
+            (
+                "ASSOCIACAO|"
+                "FUNDACAO PRIVADA|"
+                "ORGANIZACAO RELIGIOSA|"
+                "SINDICATO"
+            ),
+            regex=True,
+            na=False,
         ),
-        regex=True,
-    )
 
-    df.loc[
-        mask_terceiro_setor,
-        "tp_fornecedor",
-    ] = "TERCEIRO_SETOR"
-
-    # -------------------------------------------------------------------------
-    # Partidário
-    # -------------------------------------------------------------------------
-
-    mask_partidario = natureza.str.contains(
-        "PARTIDO POLITICO",
-        regex=True,
-    )
-
-    df.loc[
-        mask_partidario,
-        "tp_fornecedor",
-    ] = "PARTIDARIO"
-
-    # -------------------------------------------------------------------------
-    # Privado
-    # -------------------------------------------------------------------------
-
-    mask_privado = natureza.str.contains(
-        (
-            "EMPRESARIO|"
-            "SOCIEDADE EMPRESARIA|"
-            "SOCIEDADE LIMITADA|"
-            "SOCIEDADE ANONIMA|"
-            "EIRELI|"
-            "COOPERATIVA"
+        # Partidário
+        natureza.str.contains(
+            "PARTIDO POLITICO",
+            regex=True,
+            na=False,
         ),
-        regex=True,
-    )
 
-    df.loc[
-        mask_privado,
-        "tp_fornecedor",
-    ] = "PRIVADO"
+        # Privado
+        natureza.str.contains(
+            (
+                "EMPRESARIO|"
+                "SOCIEDADE EMPRESARIA|"
+                "SOCIEDADE LIMITADA|"
+                "SOCIEDADE ANONIMA|"
+                "EIRELI|"
+                "COOPERATIVA"
+            ),
+            regex=True,
+            na=False,
+        ),
+    ]
+
+    choices = [
+        FORNECEDOR_PUBLICO,
+        FORNECEDOR_TERCEIRO_SETOR,
+        FORNECEDOR_PARTIDARIO,
+        FORNECEDOR_PRIVADO,
+    ]
+
+    df["tp_fornecedor"] = (
+        np.select(
+            conditions,
+            choices,
+            default=FORNECEDOR_OUTROS,
+        )
+    )
 
     return df
 
@@ -203,24 +201,13 @@ def enrich_cnpj_data(
 ) -> pd.DataFrame:
     """
     Enriquece dataset principal com
-    informações de CNPJ.
+    informações da base CNPJ.
 
     Estratégia:
-    - normalização
+    - normalização identificadores
     - merge
-    - derivação de features
-    - métricas de cobertura
-
-    Parameters
-    ----------
-    df_base:
-        Dataset principal.
-
-    df_cnpj:
-        Base enriquecimento CNPJ.
-
-    cnpj_column:
-        Nome da coluna CNPJ no dataset principal.
+    - derivação features
+    - métricas cobertura
     """
 
     df = df_base.copy()
@@ -231,43 +218,42 @@ def enrich_cnpj_data(
     # Validação
     # -------------------------------------------------------------------------
 
+    required_columns = [
+        "cd_cnpj",
+    ]
+
+    missing_columns = [
+        col
+        for col in required_columns
+        if col not in cnpj.columns
+    ]
+
+    if missing_columns:
+
+        raise KeyError(
+            (
+                "Colunas obrigatórias ausentes "
+                f"na base CNPJ: {missing_columns}"
+            )
+        )
+
     if cnpj_column not in df.columns:
 
         raise KeyError(
             (
-                f"Coluna '{cnpj_column}' "
-                "não encontrada no dataframe base."
+                "Coluna de enrichment "
+                f"não encontrada: {cnpj_column}"
             )
         )
-
-    if "nr_cnpj" not in cnpj.columns:
-
-        raise KeyError(
-            (
-                "Coluna 'nr_cnpj' "
-                "não encontrada na base CNPJ."
-            )
-        )
-
-    # -------------------------------------------------------------------------
-    # Normalização
-    # -------------------------------------------------------------------------
-
-    df[cnpj_column] = normalize_cnpj(
-        df[cnpj_column]
-    )
-
-    cnpj["nr_cnpj"] = normalize_cnpj(
-        cnpj["nr_cnpj"]
-    )
 
     # -------------------------------------------------------------------------
     # Merge
     # -------------------------------------------------------------------------
 
     colunas_cnpj = [
-        "nr_cnpj",
+        "cd_cnpj",
         "nm_razao_social",
+        "nm_fantasia",
         "sg_uf",
         "nm_municipio",
         "ds_porte_empresa",
@@ -284,17 +270,49 @@ def enrich_cnpj_data(
         cnpj[colunas_existentes],
         how="left",
         left_on=cnpj_column,
-        right_on="nr_cnpj",
+        right_on="cd_cnpj",
     )
+
+    # -------------------------------------------------------------------------
+    # Remove coluna redundante
+    # -------------------------------------------------------------------------
+
+    if (
+        cnpj_column != "cd_cnpj"
+        and "cd_cnpj" in df.columns
+    ):
+
+        df = df.drop(
+            columns=["cd_cnpj"]
+        )
 
     # -------------------------------------------------------------------------
     # Métrica cobertura
     # -------------------------------------------------------------------------
 
-    df["is_cnpj_enriquecido"] = (
-        df["nm_razao_social"]
-        .notna()
+    coluna_cobertura = next(
+        (
+            col
+            for col in [
+                "nm_razao_social",
+                "nm_fantasia",
+                "ds_natureza_juridica",
+            ]
+            if col in df.columns
+        ),
+        None,
     )
+
+    if coluna_cobertura:
+
+        df["is_cnpj_enriquecido"] = (
+            df[coluna_cobertura]
+            .notna()
+        )
+
+    else:
+
+        df["is_cnpj_enriquecido"] = False
 
     cobertura = (
         df["is_cnpj_enriquecido"]
@@ -313,21 +331,31 @@ def enrich_cnpj_data(
     # Logging
     # -------------------------------------------------------------------------
 
-    log_transformation(
-        dataframe="df_base",
-        operation="ENRICH_CNPJ_DATA",
-        columns=[
+    columns_log = [
+        col
+        for col in [
             cnpj_column,
             "nm_razao_social",
+            "nm_fantasia",
             "sg_uf",
             "nm_municipio",
             "ds_porte_empresa",
             "ds_natureza_juridica",
             "tp_porte_empresa",
             "tp_fornecedor",
-        ],
+        ]
+        if col in df.columns
+    ]
+
+    log_transformation(
+        dataframe="df_base",
+        operation="ENRICH_CNPJ_DATA",
+        columns=columns_log,
         rules=[
-            f"CNPJ_COVERAGE={cobertura:.2%}",
+            (
+                f"CNPJ_COVERAGE="
+                f"{cobertura:.2%}"
+            ),
         ],
     )
 

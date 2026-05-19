@@ -19,10 +19,7 @@ from transparencia_partidaria_br.utils.tse.tse_parser import (
 # =============================================================================
 
 RENAME_CNPJ = {
-    "cnpj": "nr_cnpj",
-    "razao_social": "nm_razao_social",
-    "nome_fantasia": "nm_fantasia",
-    "cnae_fiscal": "cd_cnae_fiscal",
+    "nm_empresarial": "nm_razao_social",
 }
 
 # =============================================================================
@@ -68,6 +65,18 @@ def preprocess_cnpj(
             df_cnpj
         )
     )
+
+    # -------------------------------------------------------------------------
+    # CNPJ como string
+    # -------------------------------------------------------------------------
+
+    if "cd_cnpj" in df_cnpj.columns:
+
+        df_cnpj["cd_cnpj"] = (
+            df_cnpj["cd_cnpj"]
+            .astype(str)
+            .str.strip()
+        )
 
     success(
         "Preprocessamento CNPJ concluído."

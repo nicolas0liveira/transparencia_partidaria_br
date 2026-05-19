@@ -21,36 +21,10 @@ from transparencia_partidaria_br.utils.tse.tse_parser import (
 # =============================================================================
 
 RENAME_RECEITA = {
-    # Partido
-    "SG_PARTIDO": "sg_partido",
-    "NM_PARTIDO": "nm_partido",
-    # Prestador
-    "NR_CNPJ_PRESTADOR_CONTA": "nr_cnpj_prestador_conta",
-    # Doador
-    "NR_CPF_CNPJ_DOADOR": "nr_cpf_cnpj_doador",
-    "NM_DOADOR": "nm_doador",
-    # Receita
-    "DT_RECEITA": "dt_receita",
-    "VR_RECEITA": "vl_receita",
-    "DS_RECEITA": "ds_receita",
-    # Origem
-    "CD_TP_ORIGEM_DOACAO": "cd_tp_origem_doacao",
-    "DS_TP_ORIGEM_DOACAO": "ds_tp_origem_doacao",
-    # Fonte recurso
-    "CD_TP_FONTE_RECURSO": "cd_tp_fonte_recurso",
-    "DS_TP_FONTE_RECURSO": "ds_tp_fonte_recurso",
-    # Natureza recurso
-    "CD_TP_NATUREZA_RECURSO": "cd_tp_natureza_recurso",
-    "DS_TP_NATUREZA_RECURSO": "ds_tp_natureza_recurso",
-    # Espécie recurso
-    "CD_TP_ESPECIE_RECURSO": "cd_tp_especie_recurso",
-    "DS_TP_ESPECIE_RECURSO": "ds_tp_especie_recurso",
-    # Geografia
-    "SG_UF": "sg_uf",
-    "CD_MUNICIPIO": "cd_municipio",
-    "NM_MUNICIPIO": "nm_municipio",
-    # Exercício
-    "AA_EXERCICIO": "aa_exercicio",
+    # Valores monetários
+    "vr_receita": "vl_receita",
+    "nr_cnpj_prestador_conta":"cd_cnpj_prestador_conta",
+    "nr_cpf_cnpj_doador":"cd_cpf_cnpj_doador",
 }
 
 # =============================================================================
@@ -111,6 +85,7 @@ def preprocess_receita(
     df_receita = apply_date_parser(
         df_receita,
         columns=[
+            "dt_geracao",
             "dt_receita",
         ],
     )
@@ -127,27 +102,35 @@ def preprocess_receita(
     )
 
     # -------------------------------------------------------------------------
-    # Exercício
+    # Conversões numéricas
     # -------------------------------------------------------------------------
 
-    if "aa_exercicio" in df_receita.columns:
+    numeric_columns = [
+        "aa_exercicio",
+        "nr_zona",
+        "nr_zona_doador",
+        "sq_candidato_doador",
+        "nr_candidato_doador",
+    ]
 
-        df_receita[
-            "aa_exercicio"
-        ] = pd.to_numeric(
-            df_receita[
-                "aa_exercicio"
-            ],
-            errors="coerce",
-        )
+    for col in numeric_columns:
+
+        if col in df_receita.columns:
+
+            df_receita[col] = (
+                pd.to_numeric(
+                    df_receita[col],
+                    errors="coerce",
+                )
+            )
 
     # -------------------------------------------------------------------------
     # CNPJ/CPF como string
     # -------------------------------------------------------------------------
 
     cnpj_columns = [
-        "nr_cnpj_prestador_conta",
-        "nr_cpf_cnpj_doador",
+        "cd_cnpj_prestador_conta",
+        "cd_cpf_cnpj_doador",
     ]
 
     for col in cnpj_columns:
@@ -165,3 +148,14 @@ def preprocess_receita(
     )
 
     return df_receita
+
+    # -------------------------------------------------------------------------
+    # Exercício
+    # -------------------------------------------------------------------------
+
+    if "dt_receita" in df_receita.columns:
+
+        df_receita["aa_exercicio"] = (
+            df_receita["dt_receita"]
+            .dt.year
+        )

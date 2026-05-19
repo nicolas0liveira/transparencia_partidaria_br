@@ -8,8 +8,8 @@
 
 ## Relacionamentos
 
-- Receita -> CNPJ: `nr_cnpj_cpf_doador = cd_cnpj`
-- Despesa -> CNPJ: `nr_cnpj_cpf_fornecedor = cd_cnpj`
+- Receita -> CNPJ: `cd_cpf_cnpj_fornecedor_cpf_doador = cd_cnpj`
+- Despesa -> CNPJ: `cd_cpf_cnpj_fornecedor_cpf_fornecedor = cd_cnpj`
 
 ---
 
