@@ -5,7 +5,9 @@ from pathlib import Path
 import pandas as pd
 
 from transparencia_partidaria_br.utils.pipeline.logging import (
+    info,
     log_file_operation,
+    success,
 )
 
 # =============================================================================

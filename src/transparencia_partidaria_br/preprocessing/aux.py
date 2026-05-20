@@ -15,7 +15,7 @@ from transparencia_partidaria_br.utils.pipeline.logging import (
 
 RENAME_MAP = {
     "Despesa": "nm_despesa",
-    "Classificacao": "nm_classificacao",
+    "Classificacao": "tp_gasto",
 }
 
 # =============================================================================
@@ -27,11 +27,11 @@ def preprocess_classificacao_despesa(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Preprocessamento da receita TSE.
+    Preprocessamento da classificação de despesa TSE.
     """
 
     log_step(
-        "Preprocessamento receita"
+        "Preprocessamento classificação de despesa"
     )
 
     # -------------------------------------------------------------------------
@@ -45,7 +45,7 @@ def preprocess_classificacao_despesa(
     )
 
     success(
-        "Preprocessamento receita concluído."
+        "Preprocessamento classificação de despesa concluído."
     )
 
-    return df
+    return df_aux

@@ -1,3 +1,9 @@
+from pathlib import Path
+
+from transparencia_partidaria_br.ingestion.aux import (
+    ingest_aux_classificacao_despesa,
+)
+
 from transparencia_partidaria_br.ingestion.cnpj import (
     ingest_cnpj,
 )
@@ -7,13 +13,26 @@ from transparencia_partidaria_br.ingestion.tse import (
     ingest_receita,
 )
 
-from transparencia_partidaria_br.ingestion.aux import (
-    ingest_aux_classificacao_despesa,
-)
-
 from transparencia_partidaria_br.utils.pipeline.logging import (
     log_step,
     success,
+)
+
+from transparencia_partidaria_br.utils.pipeline.pipeline_utils import (
+    persist_dataset,
+)
+
+# =============================================================================
+# Paths
+# =============================================================================
+
+DATA_DIR = Path("data")
+
+BRONZE_DIR = DATA_DIR / "02-bronze"
+
+BRONZE_DIR.mkdir(
+    parents=True,
+    exist_ok=True,
 )
 
 # =============================================================================
@@ -24,41 +43,46 @@ from transparencia_partidaria_br.utils.pipeline.logging import (
 def run_ingestion() -> None:
     """
     Executa pipeline de ingestão.
-
-    Responsável por:
-    - carregar datasets externos
-    - validar leitura inicial
-    - disponibilizar dataframes brutos
-
-    Não realiza:
-    - preprocessing
-    - enriquecimento
-    - análise
     """
 
     log_step(
         "Início pipeline ingestion"
     )
 
-    # -------------------------------------------------------------------------
-    # TSE
-    # -------------------------------------------------------------------------
+    datasets = [
+        (
+            ingest_receita,
+            "receita.parquet",
+            "receita bronze",
+        ),
+        (
+            ingest_despesa,
+            "despesa.parquet",
+            "despesa bronze",
+        ),
+        (
+            ingest_cnpj,
+            "cnpj.parquet",
+            "cnpj bronze",
+        ),
+        (
+            ingest_aux_classificacao_despesa,
+            "classificacao_despesa.parquet",
+            "classificacao despesa bronze",
+        ),
+    ]
 
-    df_receita = ingest_receita()
+    for ingest_func, filename, dataset_name in datasets:
 
-    df_despesa = ingest_despesa()
+        df = ingest_func()
 
-    # -------------------------------------------------------------------------
-    # Receita Federal
-    # -------------------------------------------------------------------------
+        persist_dataset(
+            df=df,
+            path=BRONZE_DIR / filename,
+            dataset_name=dataset_name,
+        )
 
-    df_cnpj = ingest_cnpj()
-
-    # -------------------------------------------------------------------------
-    # Auxiliares
-    # -------------------------------------------------------------------------
-
-    df_despesa_class = ingest_aux_classificacao_despesa()
+        del df
 
     success(
         "Pipeline ingestion concluída."

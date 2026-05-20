@@ -21,6 +21,8 @@ from transparencia_partidaria_br.utils.tse.tse_parser import (
 # =============================================================================
 
 RENAME_DESPESA = {
+    "nr_cnpj_prestador_conta": "cd_cnpj_prestador_conta",
+    "nr_cpf_cnpj_fornecedor": "cd_cpf_cnpj_fornecedor",
     # Valores monetários
     "vr_gasto": "vl_gasto",
     "vr_pagamento": "vl_pagamento",

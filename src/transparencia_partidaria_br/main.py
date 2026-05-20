@@ -46,7 +46,7 @@ def main() -> None:
             "INGESTION"
         )
 
-        # run_ingestion()
+        run_ingestion()
 
         success(
             "Ingestion finalizada."
@@ -66,19 +66,19 @@ def main() -> None:
             "Preprocessing finalizado."
         )
 
-        # ---------------------------------------------------------------------
-        # Enrichment
-        # ---------------------------------------------------------------------
+        # # ---------------------------------------------------------------------
+        # # Enrichment
+        # # ---------------------------------------------------------------------
 
-        log_step(
-            "ENRICHMENT"
-        )
+        # log_step(
+        #     "ENRICHMENT"
+        # )
 
-        run_enrichment()
+        # run_enrichment()
 
-        success(
-            "Enrichment finalizado."
-        )
+        # success(
+        #     "Enrichment finalizado."
+        # )
 
         # ---------------------------------------------------------------------
         # Pipeline end

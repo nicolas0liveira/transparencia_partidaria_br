@@ -5,39 +5,12 @@ from transparencia_partidaria_br.utils.pipeline.logging import (
 )
 
 # =============================================================================
-# Regras de fallback
+# Constantes
 # =============================================================================
 
-FALLBACK_RULES = {
-    # -------------------------------------------------------------------------
-    # FINALISTICO
-    # -------------------------------------------------------------------------
-    "DESPESAS ELEITORAIS": "FINALISTICO",
-    "COM FINS ELEITORAIS": "FINALISTICO",
-    "CANDIDATO": "FINALISTICO",
-    "CANDIDATAS": "FINALISTICO",
-    "CANDIDATOS NEGROS": "FINALISTICO",
-    "CAMPANHA": "FINALISTICO",
-    "MULHERES": "FINALISTICO",
-    "PROPAGANDA": "FINALISTICO",
-    "PUBLICIDADE": "FINALISTICO",
-    "EVENTOS PROMOCIONAIS": "FINALISTICO",
-    "RADIO E TELEVISAO": "FINALISTICO",
-    "IMPULSIONAMENTO": "FINALISTICO",
-
-    # -------------------------------------------------------------------------
-    # ADMINISTRATIVO
-    # -------------------------------------------------------------------------
-    "ENERGIA ELETRICA": "ADMINISTRATIVO",
-    "AGUA E ESGOTO": "ADMINISTRATIVO",
-    "TELECOMUNICACOES E INTERNET": "ADMINISTRATIVO",
-    "ALUGUEIS E CONDOMINIOS": "ADMINISTRATIVO",
-    "SERVICOS CONTABEIS": "ADMINISTRATIVO",
-    "SERVICOS DE LIMPEZA": "ADMINISTRATIVO",
-    "SEGURANCA E VIGILANCIA": "ADMINISTRATIVO",
-    "PESSOAL": "ADMINISTRATIVO",
-    "TRIBUTOS": "ADMINISTRATIVO",
-}
+GASTO_INDEFINIDO = (
+    "INDEFINIDO"
+)
 
 # =============================================================================
 # Classificação
@@ -49,18 +22,45 @@ def classify_expense_type(
     df_classificacao: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Classifica despesas entre:
-    - ADMINISTRATIVO
-    - FINALISTICO
-    - INDEFINIDO
+    Classifica despesas utilizando
+    tabela oficial de classificação.
 
     Estratégia:
-    1. Lookup exato via merge
-    2. Fallback por palavras-chave
-    3. INDEFINIDO para não classificados
+    1. Lookup exato
+    2. Não classificados:
+       INDEFINIDO
     """
 
     df = df_despesa.copy()
+
+    classificacao = (
+        df_classificacao.copy()
+    )
+
+    # -------------------------------------------------------------------------
+    # Validação
+    # -------------------------------------------------------------------------
+
+    required_columns = [
+        "ds_despesa",
+        "tp_gasto",
+    ]
+
+    missing_columns = [
+        col
+        for col in required_columns
+        if col not in classificacao.columns
+    ]
+
+    if missing_columns:
+
+        raise KeyError(
+            (
+                "Colunas obrigatórias ausentes "
+                "na classificação despesa: "
+                f"{missing_columns}"
+            )
+        )
 
     # -------------------------------------------------------------------------
     # Normalização
@@ -69,17 +69,23 @@ def classify_expense_type(
     df["ds_gasto"] = (
         df["ds_gasto"]
         .fillna("")
+        .astype(str)
         .str.upper()
         .str.strip()
     )
 
-    df_classificacao = (
-        df_classificacao.copy()
+    classificacao["ds_despesa"] = (
+        classificacao["ds_despesa"]
+        .fillna("")
+        .astype(str)
+        .str.upper()
+        .str.strip()
     )
 
-    df_classificacao["DESPESA"] = (
-        df_classificacao["DESPESA"]
+    classificacao["tp_gasto"] = (
+        classificacao["tp_gasto"]
         .fillna("")
+        .astype(str)
         .str.upper()
         .str.strip()
     )
@@ -89,59 +95,27 @@ def classify_expense_type(
     # -------------------------------------------------------------------------
 
     df = df.merge(
-        df_classificacao[
+        classificacao[
             [
-                "DESPESA",
+                "ds_despesa",
                 "tp_gasto",
             ]
         ],
         how="left",
         left_on="ds_gasto",
-        right_on="DESPESA",
+        right_on="ds_despesa",
     )
 
     # -------------------------------------------------------------------------
-    # Origem da classificação
+    # Origem classificação
     # -------------------------------------------------------------------------
 
     df["tp_classificacao_origem"] = (
-        pd.NA
+        "LOOKUP_EXATO"
     )
 
-    df.loc[
-        df["tp_gasto"].notna(),
-        "tp_classificacao_origem",
-    ] = "LOOKUP_EXATO"
-
     # -------------------------------------------------------------------------
-    # Fallback
-    # -------------------------------------------------------------------------
-
-    descricao = df["ds_gasto"]
-
-    for regra, classificacao in FALLBACK_RULES.items():
-
-        mask = (
-            df["tp_gasto"].isna()
-            &
-            descricao.str.contains(
-                regra,
-                regex=False,
-            )
-        )
-
-        df.loc[
-            mask,
-            "tp_gasto",
-        ] = classificacao
-
-        df.loc[
-            mask,
-            "tp_classificacao_origem",
-        ] = f"FALLBACK::{regra}"
-
-    # -------------------------------------------------------------------------
-    # INDEFINIDO
+    # Não classificados
     # -------------------------------------------------------------------------
 
     mask_indefinido = (
@@ -151,7 +125,7 @@ def classify_expense_type(
     df.loc[
         mask_indefinido,
         "tp_gasto",
-    ] = "INDEFINIDO"
+    ] = GASTO_INDEFINIDO
 
     df.loc[
         mask_indefinido,
@@ -163,7 +137,7 @@ def classify_expense_type(
     # -------------------------------------------------------------------------
 
     df = df.drop(
-        columns=["DESPESA"],
+        columns=["ds_despesa"],
         errors="ignore",
     )
 
@@ -181,7 +155,6 @@ def classify_expense_type(
         ],
         rules=[
             "LOOKUP_EXATO",
-            "FALLBACK",
             "INDEFINIDO",
         ],
     )
