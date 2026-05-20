@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pandas as pd
-
 from transparencia_partidaria_br.preprocessing.aux import (
     preprocess_classificacao_despesa,
 )
@@ -18,80 +16,31 @@ from transparencia_partidaria_br.preprocessing.receita import (
     preprocess_receita,
 )
 
-from transparencia_partidaria_br.utils.pipeline.io import (
-    read_parquet,
-    write_parquet,
-)
-
 from transparencia_partidaria_br.utils.pipeline.logging import (
-    info,
     log_step,
     success,
 )
 
-# =============================================================================
-# Diretórios
-# =============================================================================
-
-BASE_DIR = Path(".")
-
-BRONZE_DIR = (
-    BASE_DIR / "data/02-bronze"
+from transparencia_partidaria_br.utils.pipeline.pipeline_utils import (
+    persist_dataset,
+    process_dataframe,
+    read_and_log_parquet,
 )
 
-SILVER_DIR = (
-    BASE_DIR / "data/03-silver"
-)
+# =============================================================================
+# Paths
+# =============================================================================
+
+DATA_DIR = Path("data")
+
+BRONZE_DIR = DATA_DIR / "02-bronze"
+
+SILVER_DIR = DATA_DIR / "03-silver"
 
 SILVER_DIR.mkdir(
     parents=True,
     exist_ok=True,
 )
-
-# =============================================================================
-# Arquivos bronze
-# =============================================================================
-
-ARQ_RECEITA_BRONZE = (
-    BRONZE_DIR / "receita.parquet"
-)
-
-ARQ_DESPESA_BRONZE = (
-    BRONZE_DIR / "despesa.parquet"
-)
-
-ARQ_CLASS_DESPESA_BRONZE = (
-    BRONZE_DIR
-    / "classificacao_despesa.parquet"
-)
-
-ARQ_CNPJ_BRONZE = (
-    BRONZE_DIR / "cnpj.parquet"
-)
-
-# =============================================================================
-# Arquivos silver
-# =============================================================================
-
-ARQ_RECEITA_SILVER = (
-    SILVER_DIR / "receita.parquet"
-)
-
-ARQ_DESPESA_SILVER = (
-    SILVER_DIR / "despesa.parquet"
-)
-
-ARQ_CLASS_DESPESA_SILVER = (
-    SILVER_DIR
-    / "classificacao_despesa.parquet"
-)
-
-ARQ_CNPJ_SILVER = (
-    SILVER_DIR / "cnpj.parquet"
-)
-
-
-
 
 # =============================================================================
 # Pipeline preprocessing
@@ -101,143 +50,64 @@ ARQ_CNPJ_SILVER = (
 def run_preprocessing() -> None:
     """
     Executa pipeline preprocessing.
-
-    Responsável por:
-    - leitura bronze
-    - limpeza
-    - padronização
-    - persistência silver
     """
 
     log_step(
         "Início preprocessing"
     )
 
-    # =========================================================================
-    # Load bronze
-    # =========================================================================
+    datasets = [
+        (
+            "receita",
+            preprocess_receita,
+        ),
+        (
+            "despesa",
+            preprocess_despesa,
+        ),
+        (
+            "cnpj",
+            preprocess_cnpj,
+        ),
+        (
+            "classificacao_despesa",
+            preprocess_classificacao_despesa,
+        ),
+    ]
 
-    info(
-        "Carregando datasets bronze..."
-    )
+    for dataset_name, preprocess_func in datasets:
 
-    df_receita = read_parquet(
-        ARQ_RECEITA_BRONZE
-    )
-
-    df_despesa = read_parquet(
-        ARQ_DESPESA_BRONZE
-    )
-
-    df_cnpj = read_parquet(
-        ARQ_CNPJ_BRONZE
-    )
-
-    df_aux = read_parquet(
-        ARQ_CLASS_DESPESA_BRONZE
-    )
-
-    # =========================================================================
-    # Preprocessing
-    # =========================================================================
-
-    info(
-        "Preprocessando receita..."
-    )
-
-    df_receita = preprocess_receita(
-        df_receita
-    )
-
-    info(
-        "Salvando receita na camada silver.."
-    )
-
-    write_parquet(
-        df_receita,
-        ARQ_RECEITA_SILVER,
-    )
-
-
-    info(
-        "receita processado ..."
-    )
-
-    # -------------------------------------------------------------------------
-
-    info(
-        "Preprocessando despesa..."
-    )
-
-    df_despesa = preprocess_despesa(
-        df_despesa
-    )
-
-    info(
-        "Salvando despesa na camada silver.."
-    )
-
-    write_parquet(
-        df_despesa,
-        ARQ_DESPESA_SILVER,
-    )
-
-
-    info(
-        "despesa processado ..."
-    )
-
-    # -------------------------------------------------------------------------
-
-    info(
-        "Preprocessando CNPJ..."
-    )
-
-    df_cnpj = preprocess_cnpj(
-        df_cnpj
-    )
-
-    info(
-        "Salvando CNPJ na camada silver.."
-    )
-
-    write_parquet(
-        df_cnpj,
-        ARQ_CNPJ_SILVER,
-    )
-
-    info(
-        "CNPJ processado ..."
-    )
-
-    # -------------------------------------------------------------------------
-
-    info(
-        "Preprocessando classificação despesa..."
-    )
-
-    df_aux = (
-        preprocess_classificacao_despesa(
-            df_aux
+        df = read_and_log_parquet(
+            path=(
+                BRONZE_DIR
+                / f"{dataset_name}.parquet"
+            ),
+            dataframe_name=(
+                f"{dataset_name}_bronze"
+            ),
         )
-    )
 
-    info(
-        "Salvando classificação despesa na camada silver.."
-    )
+        df = process_dataframe(
+            df=df,
+            func=preprocess_func,
+            dataframe_name=dataset_name,
+            operation=(
+                f"PREPROCESS_{dataset_name.upper()}"
+            ),
+        )
 
-    write_parquet(
-        df_aux,
-        ARQ_CLASS_DESPESA_SILVER,
-    )
+        persist_dataset(
+            df=df,
+            path=(
+                SILVER_DIR
+                / f"{dataset_name}.parquet"
+            ),
+            dataset_name=(
+                f"{dataset_name} silver"
+            ),
+        )
 
-    info(
-        "Classificação despesa processado ..."
-    )
-
-    # =========================================================================
-    # Finalização
-    # =========================================================================
+        del df
 
     success(
         "Preprocessing concluído."

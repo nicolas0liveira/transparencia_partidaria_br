@@ -1,22 +1,25 @@
 from pathlib import Path
 
-import pandas as pd
+from transparencia_partidaria_br.enrichment.despesa import (
+    aggregate_expense_party_year,
+    enrich_expense_data,
+)
 
 from transparencia_partidaria_br.enrichment.receita import (
     aggregate_revenue_party_year,
     enrich_revenue_data,
 )
 
-from transparencia_partidaria_br.enrichment.despesa import (
-    aggregate_expense_party_year,
-    enrich_expense_data,
-)
-
 from transparencia_partidaria_br.utils.pipeline.logging import (
-    info,
     log_pipeline_end,
     log_pipeline_start,
     success,
+)
+
+from transparencia_partidaria_br.utils.pipeline.pipeline_utils import (
+    persist_dataset,
+    process_dataframe,
+    read_and_log_parquet,
 )
 
 # =============================================================================
@@ -25,16 +28,13 @@ from transparencia_partidaria_br.utils.pipeline.logging import (
 
 DATA_DIR = Path("data")
 
-BRONZE_DIR = (
-    DATA_DIR / "02-bronze"
-)
+SILVER_DIR = DATA_DIR / "03-silver"
 
-SILVER_DIR = (
-    DATA_DIR / "03-silver"
-)
+GOLD_DIR = DATA_DIR / "04-gold"
 
-GOLD_DIR = (
-    DATA_DIR / "04-gold"
+GOLD_DIR.mkdir(
+    parents=True,
+    exist_ok=True,
 )
 
 # =============================================================================
@@ -51,240 +51,150 @@ def main() -> None:
         "ENRICHMENT"
     )
 
-    # -------------------------------------------------------------------------
-    # Criação diretórios
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # Load silver
+    # =========================================================================
 
-    SILVER_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
+    df_receita = read_and_log_parquet(
+        path=(
+            SILVER_DIR
+            / "receita.parquet"
+        ),
+        dataframe_name="receita",
     )
 
-    GOLD_DIR.mkdir(
-        parents=True,
-        exist_ok=True,
+    df_despesa = read_and_log_parquet(
+        path=(
+            SILVER_DIR
+            / "despesa.parquet"
+        ),
+        dataframe_name="despesa",
     )
 
-    # -------------------------------------------------------------------------
-    # Load bronze
-    # -------------------------------------------------------------------------
-
-    info(
-        "Carregando datasets bronze..."
+    df_cnpj = read_and_log_parquet(
+        path=(
+            SILVER_DIR
+            / "cnpj.parquet"
+        ),
+        dataframe_name="cnpj",
     )
 
-    df_cnpj = pd.read_parquet(
-        BRONZE_DIR / "cnpj.parquet"
-    )
-
-    df_receita = pd.read_parquet(
-        BRONZE_DIR / "receita.parquet"
-    )
-
-    df_despesa = pd.read_parquet(
-        BRONZE_DIR / "despesa.parquet"
-    )
-
-    df_classificacao_despesa = pd.read_parquet(
-        BRONZE_DIR / "classificacao_despesa.parquet"
-    )
-
-    # -------------------------------------------------------------------------
-    # Info bronze datasets
-    # -------------------------------------------------------------------------
-
-    info(
-        f"CNPJ shape: "
-        f"{df_cnpj.shape}"
-    )
-
-    info(
-        f"Receita shape: "
-        f"{df_receita.shape}"
-    )
-
-    info(
-        f"Despesa shape: "
-        f"{df_despesa.shape}"
-    )
-
-    info(
-        f"Classificação Despesa shape: "
-        f"{df_classificacao_despesa.shape}"
+    df_classificacao = (
+        read_and_log_parquet(
+            path=(
+                SILVER_DIR
+                / "classificacao_despesa.parquet"
+            ),
+            dataframe_name=(
+                "classificacao_despesa"
+            ),
+        )
     )
 
     # =========================================================================
     # RECEITA
     # =========================================================================
 
-    info(
-        "Enriquecendo receitas..."
-    )
-
     df_receita_enriquecida = (
-        enrich_revenue_data(
-            df_receita=df_receita,
+        process_dataframe(
+            df=df_receita,
+            func=enrich_revenue_data,
+            dataframe_name="receita",
+            operation="ENRICH_REVENUE",
             df_cnpj=df_cnpj,
         )
     )
 
-    # -------------------------------------------------------------------------
-    # Save silver receita
-    # -------------------------------------------------------------------------
-
-    receita_silver_path = (
-        SILVER_DIR
-        / "receita_enriquecida.parquet"
-    )
-
-    df_receita_enriquecida.to_parquet(
-        receita_silver_path,
-        index=False,
-    )
-
-    success(
-        (
-            "Receita enriquecida salva em:\n"
-            f"{receita_silver_path}"
-        )
-    )
-
-    # -------------------------------------------------------------------------
-    # Receita gold
-    # -------------------------------------------------------------------------
-
-    info(
-        "Gerando dataset receita partido_ano..."
+    persist_dataset(
+        df=df_receita_enriquecida,
+        path=(
+            GOLD_DIR
+            / "receita_enriquecida.parquet"
+        ),
+        dataset_name=(
+            "receita enriquecida"
+        ),
     )
 
     df_partido_ano_receita = (
-        aggregate_revenue_party_year(
-            df_receita_enriquecida
+        process_dataframe(
+            df=df_receita_enriquecida,
+            func=aggregate_revenue_party_year,
+            dataframe_name="receita",
+            operation=(
+                "AGGREGATE_REVENUE_PARTY_YEAR"
+            ),
         )
     )
 
-    # -------------------------------------------------------------------------
-    # Save gold receita
-    # -------------------------------------------------------------------------
-
-    receita_gold_path = (
-        GOLD_DIR
-        / "partido_ano_receita.parquet"
-    )
-
-    df_partido_ano_receita.to_parquet(
-        receita_gold_path,
-        index=False,
-    )
-
-    success(
-        (
-            "Dataset receita salvo em:\n"
-            f"{receita_gold_path}"
-        )
+    persist_dataset(
+        df=df_partido_ano_receita,
+        path=(
+            GOLD_DIR
+            / "partido_ano_receita.parquet"
+        ),
+        dataset_name=(
+            "partido ano receita"
+        ),
     )
 
     # =========================================================================
     # DESPESA
     # =========================================================================
 
-    info(
-        "Enriquecendo despesas..."
-    )
-
     df_despesa_enriquecida = (
-        enrich_expense_data(
-            df_despesa=df_despesa,
+        process_dataframe(
+            df=df_despesa,
+            func=enrich_expense_data,
+            dataframe_name="despesa",
+            operation="ENRICH_EXPENSE",
             df_cnpj=df_cnpj,
-            df_classificacao=df_classificacao_despesa,
+            df_classificacao=df_classificacao,
         )
     )
 
-    # -------------------------------------------------------------------------
-    # Save silver despesa
-    # -------------------------------------------------------------------------
-
-    despesa_silver_path = (
-        SILVER_DIR
-        / "despesa_enriquecida.parquet"
-    )
-
-    df_despesa_enriquecida.to_parquet(
-        despesa_silver_path,
-        index=False,
-    )
-
-    success(
-        (
-            "Despesa enriquecida salva em:\n"
-            f"{despesa_silver_path}"
-        )
-    )
-
-    # -------------------------------------------------------------------------
-    # Despesa gold
-    # -------------------------------------------------------------------------
-
-    info(
-        "Gerando dataset despesa partido_ano..."
+    persist_dataset(
+        df=df_despesa_enriquecida,
+        path=(
+            GOLD_DIR
+            / "despesa_enriquecida.parquet"
+        ),
+        dataset_name=(
+            "despesa enriquecida"
+        ),
     )
 
     df_partido_ano_despesa = (
-        aggregate_expense_party_year(
-            df_despesa_enriquecida
+        process_dataframe(
+            df=df_despesa_enriquecida,
+            func=aggregate_expense_party_year,
+            dataframe_name="despesa",
+            operation=(
+                "AGGREGATE_EXPENSE_PARTY_YEAR"
+            ),
         )
     )
 
-    # -------------------------------------------------------------------------
-    # Save gold despesa
-    # -------------------------------------------------------------------------
-
-    despesa_gold_path = (
-        GOLD_DIR
-        / "partido_ano_despesa.parquet"
+    persist_dataset(
+        df=df_partido_ano_despesa,
+        path=(
+            GOLD_DIR
+            / "partido_ano_despesa.parquet"
+        ),
+        dataset_name=(
+            "partido ano despesa"
+        ),
     )
 
-    df_partido_ano_despesa.to_parquet(
-        despesa_gold_path,
-        index=False,
-    )
+    # =========================================================================
+    # Finalização
+    # =========================================================================
 
     success(
         (
-            "Dataset despesa salvo em:\n"
-            f"{despesa_gold_path}"
-        )
-    )
-
-    # =========================================================================
-    # Métricas finais
-    # =========================================================================
-
-    info(
-        (
-            f"Receitas enriquecidas: "
-            f"{len(df_receita_enriquecida):,}"
-        )
-    )
-
-    info(
-        (
-            f"Despesas enriquecidas: "
-            f"{len(df_despesa_enriquecida):,}"
-        )
-    )
-
-    info(
-        (
-            f"Partidos agregados receita: "
-            f"{len(df_partido_ano_receita):,}"
-        )
-    )
-
-    info(
-        (
-            f"Partidos agregados despesa: "
-            f"{len(df_partido_ano_despesa):,}"
+            "Enrichment concluído | "
+            f"receita={len(df_receita_enriquecida):,} | "
+            f"despesa={len(df_despesa_enriquecida):,}"
         )
     )
 
