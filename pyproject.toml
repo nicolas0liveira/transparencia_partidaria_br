@@ -29,6 +29,7 @@ dependencies = [
     "typer>=0.25",
     "rich>=13.0",
     "matplotlib>=3.10.9",
+    "duckdb>=1.5.2",
 ]
 
 # --------------------------------------
@@ -36,7 +37,7 @@ dependencies = [
 # --------------------------------------
 
 [project.scripts]
-tpbr = "transparencia_partidaria_br.cli.main:app"
+tpbr = "transparencia_partidaria_br.main:main"
 
 # --------------------------------------
 # BUILD

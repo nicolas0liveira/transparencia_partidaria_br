@@ -4,7 +4,7 @@
 
 from pathlib import Path
 
-from transparencia_partidaria_br.utils.pipeline.logger import (
+from transparencia_partidaria_br.utils.pipeline.logging import (
     log_step,
     success,
 )

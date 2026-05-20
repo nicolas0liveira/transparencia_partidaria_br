@@ -3,10 +3,10 @@ Funções utilitárias reutilizáveis
 para pipelines ETL/ELT.
 
 Objetivos:
-- reduzir repetição de código
-- padronizar logging
+- reduzir repetição
 - padronizar persistência
 - simplificar pipelines
+- centralizar diagnósticos
 """
 
 from __future__ import annotations
@@ -15,64 +15,88 @@ from pathlib import Path
 from typing import Any
 from typing import Callable
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 from IPython.display import display
 
-from transparencia_partidaria_br.utils.pipeline.logger import (
+from transparencia_partidaria_br.utils.pipeline.io import (
+    read_parquet,
+    write_parquet,
+)
+
+from transparencia_partidaria_br.utils.pipeline.logging import (
     elapsed,
     info,
     log_dataframe,
+    log_dataframe_profile,
     log_file_operation,
     log_transformation,
     success,
     timer,
 )
 
-from transparencia_partidaria_br.utils.pipeline.parquet_utils import (
-    write_parquet,
-)
-
 # =============================================================================
 # LEITURA
 # =============================================================================
+
+
+def read_and_log_parquet(
+    path: Path,
+    dataframe_name: str,
+    profile: bool = False,
+) -> pd.DataFrame:
+    """
+    Lê parquet com logging padronizado.
+    """
+
+    start = timer()
+
+    info(
+        f"Lendo parquet: {path.name}"
+    )
+
+    df = read_parquet(path)
+
+    success(
+        (
+            f"{dataframe_name} carregado "
+            f"em {elapsed(start)}"
+        )
+    )
+
+    log_dataframe(
+        name=dataframe_name,
+        rows=len(df),
+        columns=len(df.columns),
+    )
+
+    if profile:
+
+        log_dataframe_profile(
+            name=dataframe_name,
+            df=df,
+        )
+
+    return df
+
 
 def read_and_log_csv(
     path: Path,
     dataframe_name: str,
     *,
     read_func: Callable[..., pd.DataFrame],
+    profile: bool = False,
     **kwargs: Any,
 ) -> pd.DataFrame:
     """
     Lê CSV com logging padronizado.
-
-    Parameters
-    ----------
-    path : Path
-
-    dataframe_name : str
-
-    read_func : Callable
-        Função de leitura.
-
-    kwargs : Any
-        Argumentos adicionais.
-
-    Returns
-    -------
-    pd.DataFrame
     """
 
     start = timer()
 
     info(
-        f"Lendo arquivo: {path.name}"
-    )
-
-    log_file_operation(
-        operation="READ_CSV",
-        source=path,
+        f"Lendo CSV: {path.name}"
     )
 
     df = read_func(
@@ -89,15 +113,24 @@ def read_and_log_csv(
 
     log_dataframe(
         name=dataframe_name,
-        df=df,
-        source=path,
+        rows=len(df),
+        columns=len(df.columns),
     )
 
+    if profile:
+
+        log_dataframe_profile(
+            name=dataframe_name,
+            df=df,
+        )
+
     return df
+
 
 # =============================================================================
 # TRANSFORMAÇÃO
 # =============================================================================
+
 
 def process_dataframe(
     df: pd.DataFrame,
@@ -105,32 +138,17 @@ def process_dataframe(
     *,
     dataframe_name: str,
     operation: str,
-    rules: list[Any] | None = None,
+    rules: list[str] | None = None,
+    details: str | None = None,
     **kwargs: Any,
 ) -> pd.DataFrame:
     """
     Executa transformação com logging.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-
-    func : Callable
-
-    dataframe_name : str
-
-    operation : str
-
-    rules : list[Any] | None
-
-    kwargs : Any
-
-    Returns
-    -------
-    pd.DataFrame
     """
 
     start = timer()
+
+    rows_before = len(df)
 
     info(
         f"Executando: {operation}"
@@ -139,6 +157,10 @@ def process_dataframe(
     transformed_df = func(
         df,
         **kwargs,
+    )
+
+    rows_after = len(
+        transformed_df
     )
 
     success(
@@ -151,116 +173,120 @@ def process_dataframe(
     log_transformation(
         dataframe=dataframe_name,
         operation=operation,
+        rows_before=rows_before,
+        rows_after=rows_after,
         rules=rules,
-        **kwargs,
+        details=details,
     )
 
     return transformed_df
+
 
 # =============================================================================
 # PERSISTÊNCIA
 # =============================================================================
 
-def persist_dataframe(
+
+def persist_dataset(
     df: pd.DataFrame,
+    path: Path,
     *,
-    parquet_path: Path | None = None,
-    csv_path: Path | None = None,
-    dataframe_name: str,
-    csv_sep: str = ";",
-    csv_encoding: str = "utf-8",
-):
+    dataset_name: str,
+) -> None:
     """
-    Persiste dataframe.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-
-    parquet_path : Path | None
-
-    csv_path : Path | None
-
-    dataframe_name : str
-
-    csv_sep : str
-
-    csv_encoding : str
+    Persiste dataset parquet
+    com logging padronizado.
     """
 
     start = timer()
 
-    # -------------------------------------------------------------------------
-    # Parquet
-    # -------------------------------------------------------------------------
-
-    if parquet_path is not None:
-
-        info(
-            f"Persistindo parquet: {parquet_path.name}"
+    info(
+        (
+            f"Salvando "
+            f"{dataset_name}..."
         )
+    )
 
-        write_parquet(
-            df,
-            parquet_path,
-        )
+    write_parquet(
+        df=df,
+        path=path,
+    )
 
-        log_file_operation(
-            operation="WRITE_PARQUET",
-            source=dataframe_name,
-            target=parquet_path,
-        )
-
-    # -------------------------------------------------------------------------
-    # CSV
-    # -------------------------------------------------------------------------
-
-    if csv_path is not None:
-
-        info(
-            f"Persistindo CSV: {csv_path.name}"
-        )
-
-        df.to_csv(
-            csv_path,
-            sep=csv_sep,
-            index=False,
-            encoding=csv_encoding,
-        )
-
-        log_file_operation(
-            operation="WRITE_CSV",
-            source=dataframe_name,
-            target=csv_path,
-        )
+    log_file_operation(
+        operation="WRITE_PARQUET",
+        source=dataset_name,
+        target=path,
+    )
 
     success(
         (
-            f"Persistência concluída "
+            f"{dataset_name} salvo "
             f"em {elapsed(start)}"
         )
     )
 
+
+def export_dataframe_csv(
+    df: pd.DataFrame,
+    output_path: Path,
+    *,
+    sep: str = ";",
+    encoding: str = "utf-8",
+    index: bool = False,
+) -> None:
+    """
+    Exporta dataframe CSV
+    com logging padronizado.
+    """
+
+    start = timer()
+
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    info(
+        (
+            f"Exportando CSV: "
+            f"{output_path.name}"
+        )
+    )
+
+    df.to_csv(
+        output_path,
+        sep=sep,
+        encoding=encoding,
+        index=index,
+    )
+
+    log_file_operation(
+        operation="EXPORT_CSV",
+        source="dataframe",
+        target=output_path,
+    )
+
+    success(
+        (
+            f"CSV exportado "
+            f"em {elapsed(start)}"
+        )
+    )
+
+
 # =============================================================================
 # DISPLAY
 # =============================================================================
+
 
 def log_dataframe_preview(
     df: pd.DataFrame,
     *,
     title: str,
     rows: int = 5,
-):
+) -> None:
     """
     Exibe preview dataframe.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-
-    title : str
-
-    rows : int
     """
 
     print(
@@ -271,9 +297,11 @@ def log_dataframe_preview(
         df.head(rows)
     )
 
+
 # =============================================================================
 # DIAGNÓSTICOS
 # =============================================================================
+
 
 def build_missing_summary(
     df: pd.DataFrame,
@@ -286,10 +314,10 @@ def build_missing_summary(
         df.isna()
         .sum()
         .sort_values(
-            ascending=False
+            ascending=False,
         )
         .to_frame(
-            name="missing"
+            name="missing",
         )
     )
 
@@ -313,7 +341,9 @@ def build_dtype_summary(
     return pd.DataFrame(
         {
             "column": df.columns,
-            "dtype": df.dtypes.astype(str),
+            "dtype": (
+                df.dtypes.astype(str)
+            ),
         }
     )
 
@@ -349,86 +379,19 @@ def build_numeric_summary(
 
 
 # =============================================================================
-# EXPORTAÇÃO AUXILIAR
+# VISUALIZAÇÃO
 # =============================================================================
 
-def export_dataframe_csv(
-    df: pd.DataFrame,
-    output_path: Path,
-    *,
-    sep: str = ";",
-    encoding: str = "utf-8",
-    index: bool = True,
-):
-    """
-    Exporta dataframe para CSV
-    com logging padronizado.
 
-    Parameters
-    ----------
-    df : pd.DataFrame
-
-    output_path : Path
-
-    sep : str
-
-    encoding : str
-
-    index : bool
-    """
-
-    start = timer()
-
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    info(
-        f"Exportando CSV: {output_path.name}"
-    )
-
-    df.to_csv(
-        output_path,
-        sep=sep,
-        encoding=encoding,
-        index=index,
-    )
-
-    log_file_operation(
-        operation="EXPORT_CSV",
-        source="dataframe",
-        target=output_path,
-    )
-
-    success(
-        (
-            f"CSV exportado em "
-            f"{elapsed(start)}"
-        )
-    )
-
-
-def salvar_plot(
+def save_plot(
     output_path: Path,
     *,
     dpi: int = 300,
     bbox_inches: str = "tight",
     close: bool = True,
-):
+) -> None:
     """
-    Salva gráfico matplotlib
-    com logging padronizado.
-
-    Parameters
-    ----------
-    output_path : Path
-
-    dpi : int
-
-    bbox_inches : str
-
-    close : bool
+    Salva gráfico matplotlib.
     """
 
     start = timer()
@@ -439,10 +402,11 @@ def salvar_plot(
     )
 
     info(
-        f"Salvando gráfico: {output_path.name}"
+        (
+            f"Salvando gráfico: "
+            f"{output_path.name}"
+        )
     )
-
-    import matplotlib.pyplot as plt
 
     plt.tight_layout()
 
@@ -453,6 +417,7 @@ def salvar_plot(
     )
 
     if close:
+
         plt.close()
 
     log_file_operation(
@@ -463,7 +428,7 @@ def salvar_plot(
 
     success(
         (
-            f"Gráfico salvo em "
-            f"{elapsed(start)}"
+            f"Gráfico salvo "
+            f"em {elapsed(start)}"
         )
     )

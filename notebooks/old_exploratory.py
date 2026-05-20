@@ -181,7 +181,7 @@ cnpj_receita = (
         [
             "SG_PARTIDO",
             "NM_PARTIDO",
-            "NR_CPF_CNPJ_DOADOR",
+            "cd_cpf_cnpj_doador",
             "NM_DOADOR",
             "VR_RECEITA",
             "DS_RECEITA",
@@ -191,12 +191,12 @@ cnpj_receita = (
 )
 
 cnpj_receita["documento"] = (
-    cnpj_receita["NR_CPF_CNPJ_DOADOR"]
+    cnpj_receita["cd_cpf_cnpj_doador"]
     .apply(clean_cnpj)
 )
 
 cnpj_receita["tipo_documento"] = (
-    cnpj_receita["NR_CPF_CNPJ_DOADOR"]
+    cnpj_receita["cd_cpf_cnpj_doador"]
     .apply(get_document_type)
 )
 

@@ -8,7 +8,7 @@ from IPython.display import display
 
 import pandas as pd
 
-from transparencia_partidaria_br.utils.pipeline.logger import (
+from transparencia_partidaria_br.utils.pipeline.logging import (
     elapsed,
     info,
     log_dataframe,
@@ -123,7 +123,7 @@ info("Extraindo CNPJs da receita...")
 cnpj_receita = (
     df_receita[
         [
-            "NR_CPF_CNPJ_DOADOR",
+            "cd_cpf_cnpj_doador",
             "NM_DOADOR",
             "VR_RECEITA",
         ]
@@ -132,7 +132,7 @@ cnpj_receita = (
 )
 
 cnpj_receita["documento"] = (
-    cnpj_receita["NR_CPF_CNPJ_DOADOR"]
+    cnpj_receita["cd_cpf_cnpj_doador"]
     .apply(clean_cnpj)
 )
 
@@ -143,7 +143,7 @@ success(
 log_transformation(
     dataframe="cnpj_receita",
     operation="CLEAN_CNPJ",
-    columns=["NR_CPF_CNPJ_DOADOR"],
+    columns=["cd_cpf_cnpj_doador"],
     rules=[
         RULE_CNPJ.REMOVE_NON_DIGITS,
         RULE_CNPJ.KEEP_VALID_CNPJ,

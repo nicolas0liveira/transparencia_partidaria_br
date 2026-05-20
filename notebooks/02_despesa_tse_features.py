@@ -33,7 +33,7 @@ import numpy as np
 import pandas as pd
 from IPython.display import display
 
-from transparencia_partidaria_br.utils.pipeline.logger import (
+from transparencia_partidaria_br.utils.pipeline.loggingg import (
     elapsed,
     info,
     log_dataframe,

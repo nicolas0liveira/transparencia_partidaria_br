@@ -1,0 +1,159 @@
+transparencia_partidaria_br
+├── AGENTS.md
+├── data
+│   ├── 00-downloads
+│   │   ├── 20260508_nicolas_nbsa_cnpj_distinto.impala.sql
+│   │   ├── municipio_tse_ibge.zip
+│   │   └── prestacao_contas_anual_partidaria_2025.zip
+│   ├── 01-raw
+│   │   ├── aux
+│   │   │   └── tse_classificacao_despesa.csv
+│   │   ├── cnpj
+│   │   │   ├── pjrfb_cnpj_com_metrica_socios.csv
+│   │   │   └── pjrfb_cnpj.csv
+│   │   └── tse
+│   │       ├── despesa_anual_2025_BRASIL.csv
+│   │       ├── municipio_tse_ibge.csv
+│   │       └── receita_anual_2025_BRASIL.csv
+│   ├── 02-bronze
+│   │   ├── classificacao_despesa.parquet
+│   │   ├── cnpj.parquet
+│   │   ├── despesa.parquet
+│   │   └── receita.parquet
+│   ├── 03-silver
+│   │   ├── classificacao_despesa.parquet
+│   │   ├── cnpj.parquet
+│   │   ├── despesa.parquet
+│   │   └── receita.parquet
+│   ├── 04-gold
+│   │   ├── partido_ano_receita.parquet
+│   │   └── receita_enriquecida.parquet
+│   └── 05-output
+├── .devcontainer
+│   ├── conf
+│   │   └── .gitkeep
+│   ├── .gitkeep
+│   └── migrate
+│       └── 001-init.sql
+├── docs
+│   ├── artigo
+│   │   ├── estrutura.md
+│   │   ├── hipoteses.md
+│   │   ├── notas.md
+│   │   └── referencias.md
+│   ├── data
+│   │   ├── dicionario
+│   │   │   └── raw
+│   │   │       ├── cnpj.md
+│   │   │       ├── tse-leiame-despesas.pdf
+│   │   │       ├── tse-leiame-receitas.pdf
+│   │   │       └── tse.md
+│   │   ├── dicionario.md
+│   │   ├── fontes.md
+│   │   └── modelagem.md
+│   ├── ia
+│   │   ├── arquitetura.md
+│   │   ├── contexto.md
+│   │   ├── convencoes_git.md
+│   │   ├── notebooks.md
+│   │   └── padronizacao_codigo.md
+│   └── metodologia
+│       ├── amostragem.md
+│       ├── clusterizacao.md
+│       ├── estimador_razao.md
+│       ├── estimador_regressao.md
+│       ├── imputacao.md
+│       └── regras_negocio
+│           ├── classificacao_financeira.md
+│           └── transformacoes.md
+├── .env
+├── .env.example
+├── estrutura_projeto.txt
+├── .github
+│   └── copilot-instructions.md
+├── .gitignore
+├── logs
+│   └── pipeline.log
+├── notebooks
+│   ├── 00-debug_bronze_despesa.ipynb
+│   ├── 00-debug_bronze.ipynb
+│   ├── 00-debug_bronze_receita.ipynb
+│   ├── 00-debug_generico.ipynb
+│   ├── 01a_distinct_cnpj_extraction.py
+│   ├── 01b_cnpj_enrichment.py
+│   ├── 01_ingestion_tse.py
+│   ├── 02_despesa_tse_features.py
+│   ├── 02_eda_tre_despesa.py
+│   ├── 02_receita_tse_features.py
+│   ├── 03a_eda_tre_despesa_valores.py
+│   ├── 05_eda.py
+│   ├── 06_inputation.py
+│   ├── 07_nbsa_analysis.py
+│   └── old_exploratory.py
+├── pyproject.toml
+├── pyrightconfig.json
+├── README.md
+├── .ruff.toml
+├── src
+│   └── transparencia_partidaria_br
+│       ├── analysis
+│       │   └── __init__.py
+│       ├── config
+│       │   ├── env.py
+│       │   ├── __init__.py
+│       │   ├── logging.py
+│       │   └── runtime.py
+│       ├── data
+│       │   └── 02-bronze
+│       ├── enrichment
+│       │   ├── aggregation.py
+│       │   ├── classification.py
+│       │   ├── cnpj.py
+│       │   ├── despesa.py
+│       │   ├── features.py
+│       │   ├── __init__.py
+│       │   ├── joins.py
+│       │   ├── main.py
+│       │   └── receita.py
+│       ├── ingestion
+│       │   ├── aux.py
+│       │   ├── cnpj.py
+│       │   ├── __init__.py
+│       │   ├── main.py
+│       │   └── tse.py
+│       ├── __init__.py
+│       ├── main.py
+│       ├── preprocessing
+│       │   ├── aux.py
+│       │   ├── cnpj.py
+│       │   ├── common.py
+│       │   ├── despesa.py
+│       │   ├── __init__.py
+│       │   ├── main.py
+│       │   └── receita.py
+│       └── utils
+│           ├── database
+│           │   ├── duckdb.py
+│           │   ├── __init__.py
+│           │   └── queries.py
+│           ├── eda
+│           │   ├── eda_utils.py
+│           │   └── __init__.py
+│           ├── __init__.py
+│           ├── pipeline
+│           │   ├── __init__.py
+│           │   ├── io.py
+│           │   ├── logging.py
+│           │   ├── parquet_utils.py
+│           │   ├── pipeline_utils.py
+│           │   └── rules.py
+│           └── tse
+│               ├── tse_classify_utils.py
+│               └── tse_parser.py
+├── tests
+├── uv.lock
+└── .vscode
+    ├── launch.json
+    └── settings.json
+
+41 directories, 116 files
