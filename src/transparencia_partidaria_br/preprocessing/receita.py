@@ -151,11 +151,18 @@ def preprocess_receita(
     # Exercício
     # -------------------------------------------------------------------------
 
-    if "dt_receita" in df_receita.columns:
+    df_receita["aa_exercicio"] = 2025
 
-        df_receita["aa_exercicio"] = (
-            df_receita["dt_receita"]
-            .dt.year
-        )
+    # -------------------------------------------------------------------------
+    # Inficadores
+    # -------------------------------------------------------------------------
+
+    #dt_receita  nula
+    df_receita["ind_dt_receita_nula"] = (
+        df_receita["dt_receita"].isna()
+    )
+
+    
+
 
     return df_receita

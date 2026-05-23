@@ -42,7 +42,7 @@ def classify_expense_type(
     # -------------------------------------------------------------------------
 
     required_columns = [
-        "ds_despesa",
+        "nm_despesa",
         "tp_gasto",
     ]
 
@@ -74,8 +74,8 @@ def classify_expense_type(
         .str.strip()
     )
 
-    classificacao["ds_despesa"] = (
-        classificacao["ds_despesa"]
+    classificacao["nm_despesa"] = (
+        classificacao["nm_despesa"]
         .fillna("")
         .astype(str)
         .str.upper()
@@ -97,13 +97,13 @@ def classify_expense_type(
     df = df.merge(
         classificacao[
             [
-                "ds_despesa",
+                "nm_despesa",
                 "tp_gasto",
             ]
         ],
         how="left",
         left_on="ds_gasto",
-        right_on="ds_despesa",
+        right_on="nm_despesa",
     )
 
     # -------------------------------------------------------------------------
@@ -137,7 +137,7 @@ def classify_expense_type(
     # -------------------------------------------------------------------------
 
     df = df.drop(
-        columns=["ds_despesa"],
+        columns=["nm_despesa"],
         errors="ignore",
     )
 
