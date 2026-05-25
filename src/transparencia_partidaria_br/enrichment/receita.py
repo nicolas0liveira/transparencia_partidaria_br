@@ -188,35 +188,50 @@ def aggregate_revenue_party_year(
         "aa_exercicio",
     ]
 
-    metricas = {
-        "vl_receita": "sum",
-        "vl_receita_publica": "sum",
-        "vl_receita_privada": "sum",
-        "vl_receita_partidaria": "sum",
-        "cd_cpf_cnpj_doador": "nunique",
-    }
-
     df_agg = (
         df.groupby(
             group_cols,
             dropna=False,
         )
-        .agg(metricas)
+        .agg(
+            vl_receita_total=(
+                "vl_receita",
+                "sum",
+            ),
+            qtd_receitas=(
+                "vl_receita",
+                "count",
+            ),
+            vl_receita_publica=(
+                "vl_receita_publica",
+                "sum",
+            ),
+            qtd_receitas_publicas=(
+                "vl_receita_publica",
+                "count",
+            ),
+            vl_receita_privada=(
+                "vl_receita_privada",
+                "sum",
+            ),
+            qtd_receitas_privadas=(
+                "vl_receita_privada",
+                "count",
+            ),
+            vl_receita_partidaria=(
+                "vl_receita_partidaria",
+                "sum",
+            ),
+            qtd_receitas_partidarias=(
+                "vl_receita_partidaria",
+                "count",
+            ),
+            qtd_doadores_unicos=(
+                "cd_cpf_cnpj_doador",
+                "nunique",
+            ),
+        )
         .reset_index()
-    )
-
-    # -------------------------------------------------------------------------
-    # Rename
-    # -------------------------------------------------------------------------
-
-    df_agg = df_agg.rename(
-        columns={
-            "vl_receita":
-                "vl_receita_total",
-
-            "cd_cpf_cnpj_doador":
-                "qtd_doadores_unicos",
-        }
     )
 
     # -------------------------------------------------------------------------
@@ -245,6 +260,11 @@ def aggregate_revenue_party_year(
         / total_receita
     ) * 100
 
+    df_agg["pct_receita_partidaria"] = (
+        df_agg["vl_receita_partidaria"]
+        / total_receita
+    ) * 100
+
     # -------------------------------------------------------------------------
     # Ticket médio
     # -------------------------------------------------------------------------
@@ -252,7 +272,7 @@ def aggregate_revenue_party_year(
     df_agg["ticket_medio_receita"] = (
         df_agg["vl_receita_total"]
         / df_agg[
-            "qtd_doadores_unicos"
+            "qtd_receitas"
         ].replace(
             0,
             pd.NA,
