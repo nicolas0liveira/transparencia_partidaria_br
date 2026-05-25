@@ -30,12 +30,6 @@ def classify_revenue_source(
 ) -> pd.DataFrame:
     """
     Classifica origem da receita.
-
-    Categorias:
-    - PUBLICA
-    - PRIVADA
-    - PARTIDARIA
-    - OUTROS
     """
 
     if "ds_tp_origem_doacao" not in df.columns:
@@ -47,19 +41,14 @@ def classify_revenue_source(
         .str.upper()
     )
 
-    df["tp_receita"] = (
-        RECEITA_OUTROS
-    )
+    df["tp_receita"] = RECEITA_OUTROS
 
     # -------------------------------------------------------------------------
     # Receita pública
     # -------------------------------------------------------------------------
 
     mask_publica = origem.str.contains(
-        (
-            "FUNDO PARTIDARIO|"
-            "FUNDO ESPECIAL"
-        ),
+        "FUNDO PARTIDARIO|FUNDO ESPECIAL",
         regex=True,
         na=False,
     )
@@ -74,10 +63,7 @@ def classify_revenue_source(
     # -------------------------------------------------------------------------
 
     mask_privada = origem.str.contains(
-        (
-            "PESSOAS FISICAS|"
-            "PESSOAS JURIDICAS"
-        ),
+        "PESSOAS FISICAS|PESSOAS JURIDICAS",
         regex=True,
         na=False,
     )
@@ -114,7 +100,7 @@ def create_revenue_features(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Cria métricas derivadas de receita.
+    Cria features linha-a-linha de receita.
     """
 
     if "vl_receita" not in df.columns:
@@ -171,118 +157,6 @@ def create_revenue_features(
 
 
 # =============================================================================
-# Agregação Receita Partido
-# =============================================================================
-
-
-def aggregate_revenue_party_year(
-    df: pd.DataFrame,
-) -> pd.DataFrame:
-    """
-    Agrega receitas em nível:
-    partido x ano
-    """
-
-    group_cols = [
-        "sg_partido",
-        "aa_exercicio",
-    ]
-
-    df_agg = (
-        df.groupby(
-            group_cols,
-            dropna=False,
-        )
-        .agg(
-            vl_receita_total=(
-                "vl_receita",
-                "sum",
-            ),
-            qtd_receitas=(
-                "vl_receita",
-                "count",
-            ),
-            vl_receita_publica=(
-                "vl_receita_publica",
-                "sum",
-            ),
-            qtd_receitas_publicas=(
-                "vl_receita_publica",
-                "count",
-            ),
-            vl_receita_privada=(
-                "vl_receita_privada",
-                "sum",
-            ),
-            qtd_receitas_privadas=(
-                "vl_receita_privada",
-                "count",
-            ),
-            vl_receita_partidaria=(
-                "vl_receita_partidaria",
-                "sum",
-            ),
-            qtd_receitas_partidarias=(
-                "vl_receita_partidaria",
-                "count",
-            ),
-            qtd_doadores_unicos=(
-                "cd_cpf_cnpj_doador",
-                "nunique",
-            ),
-        )
-        .reset_index()
-    )
-
-    # -------------------------------------------------------------------------
-    # Totais seguros
-    # -------------------------------------------------------------------------
-
-    total_receita = (
-        df_agg["vl_receita_total"]
-        .replace(
-            0,
-            pd.NA,
-        )
-    )
-
-    # -------------------------------------------------------------------------
-    # Percentuais
-    # -------------------------------------------------------------------------
-
-    df_agg["pct_receita_publica"] = (
-        df_agg["vl_receita_publica"]
-        / total_receita
-    ) * 100
-
-    df_agg["pct_receita_privada"] = (
-        df_agg["vl_receita_privada"]
-        / total_receita
-    ) * 100
-
-    df_agg["pct_receita_partidaria"] = (
-        df_agg["vl_receita_partidaria"]
-        / total_receita
-    ) * 100
-
-    # -------------------------------------------------------------------------
-    # Ticket médio
-    # -------------------------------------------------------------------------
-
-    df_agg["ticket_medio_receita"] = (
-        df_agg["vl_receita_total"]
-        / df_agg[
-            "qtd_receitas"
-        ].replace(
-            0,
-            pd.NA,
-        )
-    )
-
-    return df_agg
-
-
-# =============================================================================
 # Pipeline principal
 # =============================================================================
 
@@ -292,8 +166,8 @@ def enrich_revenue_data(
     df_cnpj: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Pipeline principal de enriquecimento
-    de receitas partidárias.
+    Pipeline principal enrichment
+    receitas partidárias.
     """
 
     df = df_receita.copy()
@@ -317,10 +191,8 @@ def enrich_revenue_data(
     if missing_columns:
 
         raise KeyError(
-            (
-                "Colunas obrigatórias ausentes "
-                f"em receita: {missing_columns}"
-            )
+            "Colunas obrigatórias ausentes "
+            f"em receita: {missing_columns}"
         )
 
     # -------------------------------------------------------------------------
@@ -332,10 +204,6 @@ def enrich_revenue_data(
         df_cnpj=df_cnpj,
         cnpj_column="cd_cpf_cnpj_doador",
     )
-
-    # -------------------------------------------------------------------------
-    # Cobertura enrichment
-    # -------------------------------------------------------------------------
 
     cobertura_cnpj = (
         df["is_cnpj_enriquecido"]
@@ -373,10 +241,7 @@ def enrich_revenue_data(
             "CLASSIFICACAO_RECEITA",
             "FEATURE_ENGINEERING_RECEITA",
             "ENRICHMENT_CNPJ_DOADOR",
-            (
-                f"CNPJ_COVERAGE="
-                f"{cobertura_cnpj:.2%}"
-            ),
+            f"CNPJ_COVERAGE={cobertura_cnpj:.2%}",
         ],
     )
 

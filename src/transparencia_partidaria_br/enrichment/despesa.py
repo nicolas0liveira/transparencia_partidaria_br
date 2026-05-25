@@ -16,28 +16,19 @@ from transparencia_partidaria_br.utils.pipeline.logging import (
 # Constantes
 # =============================================================================
 
-DESPESA_ADMINISTRATIVO = (
-    "ADMINISTRATIVO"
-)
-
-DESPESA_FINALISTICO = (
-    "FINALISTICO"
-)
-
-DESPESA_INDEFINIDO = (
-    "INDEFINIDO"
-)
+DESPESA_ADMINISTRATIVO = "ADMINISTRATIVO"
+DESPESA_FINALISTICO = "FINALISTICO"
+DESPESA_INDEFINIDO = "INDEFINIDO"
 
 # =============================================================================
 # Features de Despesa
 # =============================================================================
 
-
 def create_expense_features(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Cria métricas derivadas despesa.
+    Cria features linha-a-linha de despesa.
     """
 
     if "vl_gasto" not in df.columns:
@@ -47,23 +38,17 @@ def create_expense_features(
     # Flags
     # -------------------------------------------------------------------------
 
-    df[
-        "in_despesa_administrativa"
-    ] = (
+    df["in_despesa_administrativa"] = (
         df["tp_gasto"]
         == DESPESA_ADMINISTRATIVO
     )
 
-    df[
-        "in_despesa_finalistica"
-    ] = (
+    df["in_despesa_finalistica"] = (
         df["tp_gasto"]
         == DESPESA_FINALISTICO
     )
 
-    df[
-        "in_despesa_indefinida"
-    ] = (
+    df["in_despesa_indefinida"] = (
         df["tp_gasto"]
         == DESPESA_INDEFINIDO
     )
@@ -72,162 +57,31 @@ def create_expense_features(
     # Valores derivados
     # -------------------------------------------------------------------------
 
-    df[
-        "vl_despesa_administrativa"
-    ] = (
+    df["vl_despesa_administrativa"] = (
         df["vl_gasto"]
         .where(
-            df[
-                "in_despesa_administrativa"
-            ],
+            df["in_despesa_administrativa"],
             0,
         )
     )
 
-    df[
-        "vl_despesa_finalistica"
-    ] = (
+    df["vl_despesa_finalistica"] = (
         df["vl_gasto"]
         .where(
-            df[
-                "in_despesa_finalistica"
-            ],
+            df["in_despesa_finalistica"],
             0,
         )
     )
 
-    df[
-        "vl_despesa_indefinida"
-    ] = (
+    df["vl_despesa_indefinida"] = (
         df["vl_gasto"]
         .where(
-            df[
-                "in_despesa_indefinida"
-            ],
+            df["in_despesa_indefinida"],
             0,
         )
     )
 
     return df
-
-
-# =============================================================================
-# Agregação Despesa Partido
-# =============================================================================
-
-
-def aggregate_expense_party_year(
-    df: pd.DataFrame,
-) -> pd.DataFrame:
-    """
-    Agrega despesas em nível:
-    partido x ano
-    """
-
-    group_cols = [
-        "sg_partido",
-        "aa_exercicio",
-    ]
-
-    metricas = {
-        "vl_gasto": "sum",
-
-        "vl_despesa_administrativa":
-            "sum",
-
-        "vl_despesa_finalistica":
-            "sum",
-
-        "vl_despesa_indefinida":
-            "sum",
-
-        "cd_cpf_cnpj_fornecedor":
-            "nunique",
-    }
-
-    df_agg = (
-        df.groupby(
-            group_cols,
-            dropna=False,
-        )
-        .agg(metricas)
-        .reset_index()
-    )
-
-    # -------------------------------------------------------------------------
-    # Rename
-    # -------------------------------------------------------------------------
-
-    df_agg = df_agg.rename(
-        columns={
-            "vl_gasto":
-                "vl_despesa_total",
-
-            "cd_cpf_cnpj_fornecedor":
-                "qtd_fornecedores_unicos",
-        }
-    )
-
-    # -------------------------------------------------------------------------
-    # Totais seguros
-    # -------------------------------------------------------------------------
-
-    total_despesa = (
-        df_agg["vl_despesa_total"]
-        .replace(
-            0,
-            pd.NA,
-        )
-    )
-
-    # -------------------------------------------------------------------------
-    # Percentuais
-    # -------------------------------------------------------------------------
-
-    df_agg[
-        "pct_despesa_administrativa"
-    ] = (
-        df_agg[
-            "vl_despesa_administrativa"
-        ]
-        / total_despesa
-    ) * 100
-
-    df_agg[
-        "pct_despesa_finalistica"
-    ] = (
-        df_agg[
-            "vl_despesa_finalistica"
-        ]
-        / total_despesa
-    ) * 100
-
-    df_agg[
-        "pct_despesa_indefinida"
-    ] = (
-        df_agg[
-            "vl_despesa_indefinida"
-        ]
-        / total_despesa
-    ) * 100
-
-    # -------------------------------------------------------------------------
-    # Ticket médio
-    # -------------------------------------------------------------------------
-
-    df_agg[
-        "ticket_medio_despesa"
-    ] = (
-        df_agg["vl_despesa_total"]
-        / df_agg[
-            "qtd_fornecedores_unicos"
-        ].replace(
-            0,
-            pd.NA,
-        )
-    )
-
-    return df_agg
 
 
 # =============================================================================
@@ -267,10 +121,8 @@ def enrich_expense_data(
     if missing_columns:
 
         raise KeyError(
-            (
-                "Colunas obrigatórias ausentes "
-                f"em despesa: {missing_columns}"
-            )
+            "Colunas obrigatórias ausentes "
+            f"em despesa: {missing_columns}"
         )
 
     # -------------------------------------------------------------------------
@@ -280,14 +132,8 @@ def enrich_expense_data(
     df = enrich_cnpj_data(
         df_base=df,
         df_cnpj=df_cnpj,
-        cnpj_column=(
-            "cd_cpf_cnpj_fornecedor"
-        ),
+        cnpj_column="cd_cpf_cnpj_fornecedor",
     )
-
-    # -------------------------------------------------------------------------
-    # Cobertura enrichment
-    # -------------------------------------------------------------------------
 
     cobertura_cnpj = (
         df["is_cnpj_enriquecido"]
@@ -300,9 +146,7 @@ def enrich_expense_data(
 
     df = classify_expense_type(
         df_despesa=df,
-        df_classificacao=(
-            df_classificacao
-        ),
+        df_classificacao=df_classificacao,
     )
 
     # -------------------------------------------------------------------------
@@ -331,10 +175,7 @@ def enrich_expense_data(
             "CLASSIFICACAO_DESPESA",
             "FEATURE_ENGINEERING_DESPESA",
             "ENRICHMENT_CNPJ_FORNECEDOR",
-            (
-                f"CNPJ_COVERAGE="
-                f"{cobertura_cnpj:.2%}"
-            ),
+            f"CNPJ_COVERAGE={cobertura_cnpj:.2%}",
         ],
     )
 

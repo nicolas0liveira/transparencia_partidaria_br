@@ -2,8 +2,55 @@ Ajustar no artigo:
     Referencial Teórico:
 
     Desenvolvimento:
-        ☐ Explicar o uso da função `qcut` para gerar a variável de porte financeiro baseada em quartis.
-            Os estratos financeiros foram definidos empiricamente por quartis da distribuição da receita total partidária, buscando reduzir subjetividade na definição dos grupos e aumentar homogeneidade intraestrato.
+        ☐ incluir a camada Feature Engeneering:
+         incluir a camada Feature Engeneering, explicando a criação de novas variáveis a partir da receita e despesa agregada por partido e ano, como a porcentagem de despesa administrativa e o ticket médio de despesa explicando a criação de novas variáveis a partir da receita e despesa agregada por partido e ano, como a porcentagem de despesa administrativa e o ticket médio de despesa.
 
-    Conclusões:
+        ☐ Explicar o uso da função `qcut` para gerar a variável de porte financeiro baseada em quartis.
+            Os estratos financeiros (porte_financeiro) foram definidos empiricamente por quartis da distribuição da receita total partidária, buscando reduzir subjetividade na definição dos grupos e aumentar homogeneidade intraestrato.
+            
+        ☐ explicar a estratificacao por porte_financeiro
+            explicar a estratificacao por porte_financeiro: variável categórica que classifica os partidos em estratos de porte financeiro (baixo, médio, alto) com base na receita total agregada por partido e ano. Os estratos financeiros foram definidos empiricamente por quartis da distribuição da receita total partidária, buscando reduzir subjetividade na definição dos grupos e aumentar homogeneidade intraestrato.
         
+
+        
+    Conclusões:
+
+    Qualidade dos dados:
+        ☐ Explicar a importância da qualidade dos dados para análises de EDA e extrato, destacando como a limpeza e enriquecimento dos dados contribuem para insights mais precisos e confiáveis.
+
+        Foram identificados registros agregados partido-ano contendo exclusivamente movimentações de receita ou despesa. Esses casos podem refletir particularidades operacionais, ausência de movimentação financeira complementar no período analisado ou limitações de completude das bases disponibilizadas pelo TSE. Considerando que os indicadores percentuais dependem simultaneamente de receitas e despesas consolidadas, optou-se pela exclusão desses registros da base analítica final utilizada na inferência estatística. Uma vez que a unidade estatística é Partido x Ano e o estudo pretende analisar relação receita ↔ despesa; correlação; estimador razão; estratificação financeira. A observação fica incompleta para inferência multivariada. Trazendo impacto principalmente para o estimador razão
+
+        | Caso               | Receita | Despesa |
+        | ------------------ | ------- | ------- |
+        | Partido só receita | OK      | NaN     |
+        | Partido só despesa | NaN     | OK      |
+
+        Foram removidos 9 registros partido-ano sem receita ou despesa válida.
+        DEM | 2025 | receita=0.0 | despesa=0.0
+        DEMOCRATA | 2025 | receita=72005.33 | despesa=0.0
+        PATRIOTA | 2025 | receita=0.0 | despesa=0.0
+        PCO | 2025 | receita=0.0 | despesa=0.0
+        PRTB | 2025 | receita=0.0 | despesa=0.0
+        PSC | 2025 | receita=0.0 | despesa=0.0
+        PSL | 2025 | receita=0.0 | despesa=0.0
+        PTB | 2025 | receita=0.0 | despesa=0.0
+        UP | 2025 | receita=6243.87 | despesa=0.0
+
+
+
+    Features fundamentais:
+        Para EDA:
+            vl_receita_fp - receita total agregada por partido e ano, usada para definir o porte financeiro dos partidos.
+            vl_receita_outros - receita total de outras fontes (não identificadas como receita financeira) agregada por partido e ano.
+            vl_despesa_fp - despesa total agregada por partido e ano, usada para análise de eficiência e alocação de recursos.
+            pct_receita_fp - porcentagem da receita total proveniente de fontes financeiras, usada para avaliar a dependência financeira dos partidos.
+
+            pct_despesa_administrativa - porcentagem da despesa total destinada a despesas administrativas, usada para avaliar a eficiência na alocação de recursos e identificar possíveis excessos administrativos. (pct_despesa_administrativa = vl_despesa_administrativa / vl_despesa_total)
+
+            ticket_medio_despesa - valor médio gasto por transação de despesa, usado para identificar padrões de gasto e possíveis anomalias. (ticket_medio_despesa = vl_despesa_total / qtd_despesas)
+            
+            
+
+        
+        Para o Extrato: 
+            porte_financeiro - variável categórica que classifica os partidos em estratos de porte financeiro (baixo, médio, alto) com base na receita total agregada por partido e ano. Os estratos financeiros foram definidos empiricamente por quartis da distribuição da receita total partidária, buscando reduzir subjetividade na definição dos grupos e aumentar homogeneidade intraestrato.
