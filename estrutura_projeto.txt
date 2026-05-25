@@ -26,6 +26,8 @@ transparencia_partidaria_br
 │   │   ├── despesa.parquet
 │   │   └── receita.parquet
 │   ├── 04-gold
+│   │   ├── despesa_enriquecida.parquet
+│   │   ├── partido_ano_despesa.parquet
 │   │   ├── partido_ano_receita.parquet
 │   │   └── receita_enriquecida.parquet
 │   └── 05-output
@@ -37,10 +39,15 @@ transparencia_partidaria_br
 │       └── 001-init.sql
 ├── docs
 │   ├── artigo
-│   │   ├── estrutura.md
+│   │   ├── artigo_incompleto_unb_nbsa2026.pdf
+│   │   ├── estrutura_artigo.md
 │   │   ├── hipoteses.md
-│   │   ├── notas.md
-│   │   └── referencias.md
+│   │   └── referencias
+│   │       ├── brasil_organizacao_partidaria_competição_eleitoral_financiamento.pdf
+│   │       ├── Bruno_Wilhelm_Speck_O_financiamento_poli.pdf
+│   │       ├── dilema-empresas-financiam-eleicoes.pdf
+│   │       ├── fluxo_pipeline_analitico_gpt.png
+│   │       └── Rastro-DM_mineracao_dados_com_rastro.pdf
 │   ├── data
 │   │   ├── dicionario
 │   │   │   └── raw
@@ -49,7 +56,7 @@ transparencia_partidaria_br
 │   │   │       ├── tse-leiame-receitas.pdf
 │   │   │       └── tse.md
 │   │   ├── dicionario.md
-│   │   ├── fontes.md
+│   │   ├── fontes_dados.md
 │   │   └── modelagem.md
 │   ├── ia
 │   │   ├── arquitetura.md
@@ -79,17 +86,7 @@ transparencia_partidaria_br
 │   ├── 00-debug_bronze.ipynb
 │   ├── 00-debug_bronze_receita.ipynb
 │   ├── 00-debug_generico.ipynb
-│   ├── 01a_distinct_cnpj_extraction.py
-│   ├── 01b_cnpj_enrichment.py
-│   ├── 01_ingestion_tse.py
-│   ├── 02_despesa_tse_features.py
-│   ├── 02_eda_tre_despesa.py
-│   ├── 02_receita_tse_features.py
-│   ├── 03a_eda_tre_despesa_valores.py
-│   ├── 05_eda.py
-│   ├── 06_inputation.py
-│   ├── 07_nbsa_analysis.py
-│   └── old_exploratory.py
+│   └── 00-explorando_dados.ipynb
 ├── pyproject.toml
 ├── pyrightconfig.json
 ├── README.md
@@ -151,9 +148,10 @@ transparencia_partidaria_br
 │               ├── tse_classify_utils.py
 │               └── tse_parser.py
 ├── tests
+├── transparencia_partidaria_br.tar.gz
 ├── uv.lock
 └── .vscode
     ├── launch.json
     └── settings.json
 
-41 directories, 116 files
+42 directories, 113 files

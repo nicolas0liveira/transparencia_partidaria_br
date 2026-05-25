@@ -108,7 +108,7 @@ def main() -> None:
     persist_dataset(
         df=df_receita_enriquecida,
         path=(
-            GOLD_DIR
+            SILVER_DIR
             / "receita_enriquecida.parquet"
         ),
         dataset_name=(
@@ -156,7 +156,7 @@ def main() -> None:
     persist_dataset(
         df=df_despesa_enriquecida,
         path=(
-            GOLD_DIR
+            SILVER_DIR
             / "despesa_enriquecida.parquet"
         ),
         dataset_name=(

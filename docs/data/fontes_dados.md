@@ -17,6 +17,6 @@
 
 Objetivo:
 
-- enriquecimento de fornecedores
+- enriquecimento de fornecedores e doadores
 - análise CNAE
 - análise de risco
